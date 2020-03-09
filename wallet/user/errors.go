@@ -2,6 +2,16 @@ package user
 
 import "fmt"
 
+// ErrHashPassword
+type ErrHashPassword struct {
+	password string
+	message string
+}
+func (err ErrHashPassword) Error() string {
+	return err.message
+}
+
+
 // ErrUserExists returned when adding a user with
 // phone number or email number that are already in the db.
 type ErrUserExists struct {

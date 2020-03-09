@@ -48,7 +48,7 @@ func (r repository) Add(user User) (User, error) {
 
 func (r repository) Delete(user User) error {
 	result := r.database.Delete(&user)
-	return result.Error
+	return NewErrUnexpected(result.Error)
 }
 
 func (r repository) GetByID(id uuid.UUID) (User, error) {
