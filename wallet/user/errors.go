@@ -5,18 +5,44 @@ import "fmt"
 // ErrHashPassword
 type ErrHashPassword struct {
 	password string
-	message string
+	message  string
 }
+
 func (err ErrHashPassword) Error() string {
 	return err.message
 }
 
+// ErrTokenParsing ...
+type ErrTokenParsing struct {
+	message string
+}
+
+func (err ErrTokenParsing) Error() string {
+	return err.message
+}
+
+// ErrUnauthorized ...
+type ErrUnauthorized struct {
+	message string
+}
+
+func (err ErrUnauthorized) Error() string {
+	return err.message
+}
+
+type ErrUserNotFound struct {
+	message string
+}
+
+func (err ErrUserNotFound) Error() string {
+	return err.message
+}
 
 // ErrUserExists returned when adding a user with
 // phone number or email number that are already in the db.
 type ErrUserExists struct {
 	message string
-	inUser User
+	inUser  User
 	outUser User
 }
 
@@ -31,7 +57,6 @@ func (err *ErrUserExists) Error() string {
 
 	return err.message
 }
-
 
 // NewErrUnexpected create a new ErrUnexpected error for when doing
 // queries or anything else for the type user.

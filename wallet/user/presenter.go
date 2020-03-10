@@ -1,5 +1,9 @@
 package user
 
+type SignedUser struct {
+	UserID string `json:"userId"`
+	Token string `json:"token"`
+}
 
 func RegistrationResponse(user *User) map[string]interface{} {
 	return map[string]interface{}{

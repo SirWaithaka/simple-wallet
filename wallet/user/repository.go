@@ -1,6 +1,7 @@
 package user
 
 import (
+	"fmt"
 	"log"
 
 	uuid "github.com/satori/go.uuid"
@@ -12,8 +13,9 @@ import (
 type Repository interface {
 	Add(User) (User, error)
 	Delete(User) error
-	GetByID(id uuid.UUID) (User, error)
-	GetByEmail(email string) (User, error)
+	GetByID(uuid.UUID) (User, error)
+	GetByEmail(string) (User, error)
+	GetByPhoneNumber(string) (User, error)
 	Update(User) error
 }
 
@@ -53,7 +55,15 @@ func (r repository) Delete(user User) error {
 
 func (r repository) GetByID(id uuid.UUID) (User, error) {
 	var user User
+
 	result := r.database.Where("id = ?", id.String()).First(&user)
+
+	// check if no record found.
+	if result.RecordNotFound() {
+		msg := fmt.Sprintf("user with id %v not found", id.String())
+		return User{}, ErrUserNotFound{message: msg}
+	}
+
 	if err := result.Error; err != nil {
 		return User{}, err
 	}
@@ -62,7 +72,34 @@ func (r repository) GetByID(id uuid.UUID) (User, error) {
 
 func (r repository) GetByEmail(email string) (User, error) {
 	var user User
-	result := r.database.Where("email = ?", email).First(&user)
+
+	// perform query
+	result := r.database.Where(User{Email:email}).First(&user)
+
+	// check if no record found.
+	if result.RecordNotFound() {
+		msg := fmt.Sprintf("user with email %v not found", email)
+		return User{}, ErrUserNotFound{message: msg}
+	}
+
+	// if any other error, return.
+	if err := result.Error; err != nil {
+		return User{}, err
+	}
+	return user, nil
+}
+
+func (r repository) GetByPhoneNumber(phoneNo string) (User, error) {
+	var user User
+
+	result := r.database.Where(User{PhoneNumber: phoneNo}).First(&user)
+
+	// check if no record found.
+	if result.RecordNotFound() {
+		msg := fmt.Sprintf("user with phone number %v not found", phoneNo)
+		return User{}, ErrUserNotFound{message: msg}
+	}
+
 	if err := result.Error; err != nil {
 		return User{}, err
 	}
