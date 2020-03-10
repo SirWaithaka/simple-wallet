@@ -22,6 +22,8 @@ type DatabaseConfig struct {
 // into a struct
 type YamlConfig struct {
 	Database DatabaseConfig `yaml:"database"`
+
+	AppSecret string `yaml:"app_secret_key"`
 }
 
 func ReadYaml(path string) *YamlConfig {

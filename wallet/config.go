@@ -26,16 +26,20 @@ func (d Database) String(sslmode string) string {
 
 type Config struct {
 	DB Database
+
+	Secret string
 }
 
 func GetConfig(cfg config.YamlConfig) Config {
 	return Config{
-		Database{
+		DB: Database{
 			User:     cfg.Database.User,
 			Password: cfg.Database.Password,
 			Host:     cfg.Database.Host,
 			Port:     cfg.Database.Port,
 			DBName:   cfg.Database.DBName,
 		},
+
+		Secret: cfg.AppSecret,
 	}
 }
