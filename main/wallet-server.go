@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber"
 	"log"
 	"os"
-
-	"github.com/gofiber/fiber"
-
 	"wallet"
 	"wallet/config"
 	"wallet/registry"
@@ -29,19 +27,12 @@ func main() {
 	// run migrations; update tables
 	postgres.Migrate(database)
 
-	//userRepo := user.NewRepository(database)
-	//u, err := userRepo.GetByPhoneNumber("world@helloo.com")
-	//if err != nil {
-	//	log.Printf("%s", err)
-	//	os.Exit(1)
-	//}
-	//log.Println(u)
-
-	domain := registry.NewDomain(confg, database)
+	channels := registry.NewChannels()
+	domain := registry.NewDomain(confg, database, channels)
 
 	// create the fiber server.
 	server := fiber.New()
-	rest.Router(server, domain) // add endpoints
+	rest.Router(server, domain, confg) // add endpoints
 
 	// listen and serve
 	port := fmt.Sprintf(":%v", 6700)
