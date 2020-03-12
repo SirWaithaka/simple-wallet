@@ -239,3 +239,25 @@ Response example
     ]
 }
 ```
+
+## Testing
+
+Tests have not been written for the application but i have very important talks i would share here that i cant recommend
+enough about how to go about testing the application.
+
+1. [Ian Cooper - TDD, Where Did It All Go Wrong](https://www.youtube.com/watch?v=EZ05e7EMOLM)
+2. 
+
+An approach to testing this application would be something in the following lines.
+
+1. Test the code in the interactor files
+2. Test the code in the repository files
+
+The above files carry the bulk of the behaviour of the whole application, they are the business logic of the application.
+The rest of the files are just implementation details that could change rapidly and the tests written for them would
+certainly fail after change.
+
+e.g.
+the http handler functions in the application use [gofiber](https://github.com/gofiber/fiber), writing unit tests for
+them is good but not desired, because [gofiber](https://github.com/gofiber/fiber) can be replaced with [mux](https://github.com/gorilla/mux) easily and that
+would break your tests.
