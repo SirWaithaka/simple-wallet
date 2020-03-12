@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber"
 	uuid "github.com/satori/go.uuid"
+	"log"
 	"wallet/account"
+	"wallet/transaction"
 )
 
 type param struct {
@@ -87,9 +89,25 @@ func Withdraw(interactor account.Interactor) func(*fiber.Ctx) {
 
 // MiniStatement returns a small short summary of the
 // most recent transactions on an account.
-func MiniStatement() func(*fiber.Ctx) {
+func MiniStatement(interactor transaction.Interactor) func(*fiber.Ctx) {
 
 	return func(ctx *fiber.Ctx) {
+		var userDetails = ctx.Locals("userDetails").(map[string]string)
+		userId := userDetails["userId"]
 
+		transactions, err := interactor.GetStatement(uuid.FromStringOrNil(userId))
+		if err != nil {
+			errHTTP := ErrResponse(err)
+			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return
+		}
+
+		log.Println(transactions)
+
+		_ = ctx.JSON(map[string]interface{} {
+			"message": fmt.Sprintf("ministatement retrieved for the past 5 transactions"),
+			"userId": userId,
+			"transactions": transactions,
+		})
 	}
 }
