@@ -1,11 +1,15 @@
 package postgres
 
 import (
+	"wallet/account"
 	"wallet/storage"
 	"wallet/user"
 )
 
 // Migrate updates the db with new columns, and tables
 func Migrate(database *storage.Database) {
-	database.DB.AutoMigrate(user.User{})
+	database.DB.AutoMigrate(
+		user.User{},
+		account.Account{},
+		)
 }
