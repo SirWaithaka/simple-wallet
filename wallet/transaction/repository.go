@@ -9,7 +9,7 @@ import (
 
 type Repository interface {
 	Add(Transaction) (Transaction, error)
-	GetTransactions(userId uuid.UUID, from time.Time) (*[]Transaction, error)
+	GetTransactions(userId uuid.UUID, from time.Time, limit int) (*[]Transaction, error)
 }
 
 type repository struct {
@@ -29,6 +29,18 @@ func (r repository) Add(tx Transaction) (Transaction, error) {
 	return tx, nil
 }
 
-func (r repository) GetTransactions(userId uuid.UUID, from time.Time) (*[]Transaction, error) {
-	return nil, nil
+func (r repository) GetTransactions(userId uuid.UUID, from time.Time, limit int) (*[]Transaction, error) {
+	var transactions []Transaction
+
+	result := r.database.Where(
+		Transaction{UserID: userId},
+	).Where(
+		"timestamp <= ?", from,
+	).Order("timestamp desc").Limit(limit).Find(&transactions)
+
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+
+	return &transactions, nil
 }

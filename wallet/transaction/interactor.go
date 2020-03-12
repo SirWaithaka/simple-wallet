@@ -1,13 +1,15 @@
 package transaction
 
 import (
+	uuid "github.com/satori/go.uuid"
 	"log"
+	"time"
 	"wallet/data"
 )
 
 type Interactor interface {
 	AddTransaction(Transaction) error
-	//GetStatement()
+	GetStatement(userId uuid.UUID) (*[]Transaction, error)
 }
 
 type interactor struct {
@@ -26,7 +28,7 @@ func NewInteractor(repository Repository, transChan data.ChanNewTransactions) In
 	return intr
 }
 
-func(i interactor) AddTransaction(tx Transaction) error {
+func (i interactor) AddTransaction(tx Transaction) error {
 	_, err := i.repository.Add(tx)
 	if err != nil {
 		// if we get an error we are going to add the
@@ -36,6 +38,16 @@ func(i interactor) AddTransaction(tx Transaction) error {
 		return err
 	}
 	return nil
+}
+
+func (i interactor) GetStatement(userId uuid.UUID) (*[]Transaction, error) {
+	now := time.Now()
+	transactions, err := i.repository.GetTransactions(userId, now, 5)
+	if err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
 }
 
 func (i interactor) listenOnTransactions() {
