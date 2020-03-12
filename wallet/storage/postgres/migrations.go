@@ -3,6 +3,7 @@ package postgres
 import (
 	"wallet/account"
 	"wallet/storage"
+	"wallet/transaction"
 	"wallet/user"
 )
 
@@ -11,5 +12,6 @@ func Migrate(database *storage.Database) {
 	database.DB.AutoMigrate(
 		user.User{},
 		account.Account{},
-		)
+		transaction.Transaction{},
+	)
 }
