@@ -15,6 +15,7 @@ const (
 )
 
 type Interactor interface {
+	GetBalance(userId uuid.UUID) (float64, error)
 	Deposit(userId uuid.UUID, amount uint) (float64, error)
 	Withdraw(userId uuid.UUID, amount uint) (float64, error)
 }
@@ -38,6 +39,14 @@ func (i interactor) CreateAccount(userId uuid.UUID) (Account, error) {
 		return Account{}, err
 	}
 	return acc, nil
+}
+
+func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
+	bal, err := i.repository.GetBalance(userId)
+	if err != nil {
+		return 0, err
+	}
+	return bal, nil
 }
 
 func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {

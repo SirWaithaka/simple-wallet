@@ -23,6 +23,7 @@ func apiRouteGroup(g *fiber.Group, domain *registry.Domain, config wallet.Config
 	g.Post("/login", users.Authenticate(domain.User))
 	g.Post("/user", users.Register(domain.User))
 
+	g.Get("/account/balance", middleware.AuthByBearerToken(config.Secret), accounts.BalanceEnquiry(domain.Account))
 	g.Post("/account/deposit", middleware.AuthByBearerToken(config.Secret), accounts.Deposit(domain.Account))
 	g.Post("/account/withdrawal", middleware.AuthByBearerToken(config.Secret), accounts.Withdraw(domain.Account))
 	g.Get("/account/statement", middleware.AuthByBearerToken(config.Secret), accounts.MiniStatement())
