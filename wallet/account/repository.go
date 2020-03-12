@@ -11,9 +11,9 @@ import (
 
 type Repository interface {
 	Create(userId uuid.UUID) (Account, error)
-	GetBalance(userId uuid.UUID) (float64, error)
-	Deposit(userId uuid.UUID, amount uint) (float64, error)
-	Withdraw(userId uuid.UUID, amount uint) (float64, error)
+	GetBalance(userId uuid.UUID) (*Account, error)
+	Deposit(userId uuid.UUID, amount uint) (*Account, error)
+	Withdraw(userId uuid.UUID, amount uint) (*Account, error)
 }
 
 type repository struct {
@@ -24,6 +24,7 @@ func NewRepository(db *storage.Database) Repository {
 	return &repository{database: db}
 }
 
+// Create a now account for userId
 func (r repository) Create(userId uuid.UUID) (Account, error) {
 	// check if user has no account already
 	var acc Account
@@ -43,45 +44,48 @@ func (r repository) Create(userId uuid.UUID) (Account, error) {
 	return acc, nil
 }
 
-func (r repository) GetBalance(userId uuid.UUID) (float64, error) {
+// GetBalance for account with userId
+func (r repository) GetBalance(userId uuid.UUID) (*Account, error) {
 	acc, err := r.isAccAccessible(userId)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return acc.Balance, nil
+	return acc, nil
 }
 
-func (r repository) Deposit(userId uuid.UUID, amount uint) (float64, error) {
+// Deposit amount into account with userId
+func (r repository) Deposit(userId uuid.UUID, amount uint) (*Account, error) {
 	acc, err := r.isAccAccessible(userId)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// update balance with amount: add amount
 	amtF := acc.Balance + float64(amount)
 	result := r.database.Model(acc).Updates(Account{Balance: amtF})
 	if err = result.Error; err != nil {
-		return 0, NewErrUnexpected(err)
+		return nil, NewErrUnexpected(err)
 	}
 
-	return acc.Balance, nil
+	return acc, nil
 }
 
-func (r repository) Withdraw(userId uuid.UUID, amount uint) (float64, error) {
+// Withdraw amount from account with userId
+func (r repository) Withdraw(userId uuid.UUID, amount uint) (*Account, error) {
 	acc, err := r.isAccAccessible(userId)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// update balance with amount: subtract amount
 	amtF := acc.Balance - float64(amount)
 	result := r.database.Model(acc).Updates(Account{Balance: amtF})
 	if err = result.Error; err != nil {
-		return 0, NewErrUnexpected(err)
+		return nil, NewErrUnexpected(err)
 	}
 
-	return acc.Balance, nil
+	return acc, nil
 }
 
 func (r repository) isAccAccessible(userId uuid.UUID) (*Account, error) {

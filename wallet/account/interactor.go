@@ -3,6 +3,8 @@ package account
 import (
 	"fmt"
 	"log"
+	"time"
+	"wallet/transaction"
 
 	uuid "github.com/satori/go.uuid"
 
@@ -20,8 +22,12 @@ type Interactor interface {
 	Withdraw(userId uuid.UUID, amount uint) (float64, error)
 }
 
-func NewInteractor(repository Repository, usersChan data.ChanNewUsers) Interactor {
-	intr := &interactor{repository: repository, usersChannel: usersChan}
+func NewInteractor(repository Repository, usersChan data.ChanNewUsers, transChan data.ChanNewTransactions) Interactor {
+	intr := &interactor{
+		repository: repository,
+		usersChannel: usersChan,
+		transactionsChannel: transChan,
+	}
 
 	go intr.listenOnNewUsers()
 
@@ -31,6 +37,7 @@ func NewInteractor(repository Repository, usersChan data.ChanNewUsers) Interacto
 type interactor struct {
 	repository Repository
 	usersChannel data.ChanNewUsers
+	transactionsChannel data.ChanNewTransactions
 }
 
 func (i interactor) CreateAccount(userId uuid.UUID) (Account, error) {
@@ -42,11 +49,13 @@ func (i interactor) CreateAccount(userId uuid.UUID) (Account, error) {
 }
 
 func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
-	bal, err := i.repository.GetBalance(userId)
+	acc, err := i.repository.GetBalance(userId)
 	if err != nil {
 		return 0, err
 	}
-	return bal, nil
+
+	i.postTransactionDetails(userId, *acc, transaction.TxTypeBalance)
+	return acc.Balance, nil
 }
 
 func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
@@ -56,7 +65,13 @@ func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
 		}
 	}
 
-	return i.repository.Deposit(userId, amount)
+	acc, err := i.repository.Deposit(userId, amount)
+	if err != nil {
+		return 0, err
+	}
+
+	i.postTransactionDetails(userId, *acc, transaction.TxTypeDeposit)
+	return acc.Balance, nil
 }
 
 func (i interactor) Withdraw(userId uuid.UUID, amount uint) (float64, error) {
@@ -67,9 +82,22 @@ func (i interactor) Withdraw(userId uuid.UUID, amount uint) (float64, error) {
 	}
 
 	// we can implement a double withdrawal check here. That will prevent a user from
-	// withdrawing same amount twice within a stipulated time interval.
+	// withdrawing same amount twice within a stipulated time interval because of system lag.
 
-	return i.repository.Withdraw(userId, amount)
+	acc, err := i.repository.Withdraw(userId, amount)
+	if err != nil {
+		return 0, err
+	}
+
+	i.postTransactionDetails(userId, *acc, transaction.TxTypeWithdrawal)
+	return acc.Balance, nil
+}
+
+func (i interactor) postTransactionDetails(userId uuid.UUID, acc Account, txType string) {
+	timestamp := time.Now()
+	newTransaction := parseTransactionDetails(userId, acc, txType, timestamp)
+
+	go func() { i.transactionsChannel.Writer <- *newTransaction }()
 }
 
 func (i interactor) listenOnNewUsers() {
