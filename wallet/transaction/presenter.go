@@ -8,7 +8,7 @@ import (
 	"wallet/data"
 )
 
-func parseToTransaction(newTx data.NewTransaction) *Transaction {
+func parseToTransaction(newTx data.TransactionContract) *Transaction {
 	return &Transaction{
 		ID:        uuid.NewV4(),
 		Type:      newTx.TxType,

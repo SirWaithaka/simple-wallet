@@ -18,8 +18,8 @@ func RegistrationResponse(user *User) map[string]interface{} {
 	}
 }
 
-func parseToNewUser(user User) data.NewRegisteredUser {
-	return data.NewRegisteredUser{
+func parseToNewUser(user User) data.UserContract {
+	return data.UserContract{
 		UserID: user.ID,
 	}
 }
