@@ -52,7 +52,7 @@ func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
 func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
 	if amount < 10 {
 		return 0, ErrAmountBelowMinimum{
-			Message: fmt.Sprintf("cannot deposit amounts less that %v", minimumDepositAmount),
+			Message: fmt.Sprintf("cannot deposit amounts less than %v", minimumDepositAmount),
 		}
 	}
 
@@ -60,6 +60,15 @@ func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
 }
 
 func (i interactor) Withdraw(userId uuid.UUID, amount uint) (float64, error) {
+	if amount < 10 {
+		return 0, ErrAmountBelowMinimum{
+			Message: fmt.Sprintf("cannot withdraw amounts less than %v", minimumWithdrawalAmount),
+		}
+	}
+
+	// we can implement a double withdrawal check here. That will prevent a user from
+	// withdrawing same amount twice within a stipulated time interval.
+
 	return i.repository.Withdraw(userId, amount)
 }
 

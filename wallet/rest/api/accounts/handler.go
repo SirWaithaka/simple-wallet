@@ -64,7 +64,24 @@ func Deposit(interactor account.Interactor) func(*fiber.Ctx) {
 func Withdraw(interactor account.Interactor) func(*fiber.Ctx) {
 
 	return func(ctx *fiber.Ctx) {
+		var userDetails = ctx.Locals("userDetails").(map[string]string)
+		userId := userDetails["userId"]
 
+		var p param
+		_ = ctx.BodyParser(&p)
+
+		balance, err := interactor.Withdraw(uuid.FromStringOrNil(userId), p.Amount)
+		if err != nil {
+			errHTTP := ErrResponse(err)
+			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return
+		}
+
+		_ = ctx.JSON(map[string]interface{}{
+			"message": fmt.Sprintf("Amount successfully withdrawn new balance %v", balance),
+			"balance": balance,
+			"userId": userId,
+		})
 	}
 }
 
