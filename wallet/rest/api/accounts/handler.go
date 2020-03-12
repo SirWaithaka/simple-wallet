@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber"
 	uuid "github.com/satori/go.uuid"
-	"log"
 	"wallet/account"
 	"wallet/transaction"
 )
@@ -101,8 +100,6 @@ func MiniStatement(interactor transaction.Interactor) func(*fiber.Ctx) {
 			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
 			return
 		}
-
-		log.Println(transactions)
 
 		_ = ctx.JSON(map[string]interface{} {
 			"message": fmt.Sprintf("ministatement retrieved for the past 5 transactions"),
