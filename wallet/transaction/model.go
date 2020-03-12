@@ -1,7 +1,22 @@
 package transaction
 
-//For ministatement you need another table.. That will store transactions..
-//It should have things like transaction ID, transaction type, timestamp,
-//amount, user ID, etc.. Every time user deposits or withdraws you update
-//that table accordingly.. So when a user requests for ministatement you
-//give them the most recent 5 transactions.
+import (
+	"time"
+
+	uuid "github.com/satori/go.uuid"
+)
+
+const (
+	TxTypeDeposit    = "deposit"
+	TxTypeWithdrawal = "withdrawal"
+	TxTypeBalance    = "balance_enquiry"
+)
+
+type Transaction struct {
+	ID        uuid.UUID `json:"transactionId"`
+	Type      string    `json:"transactionType"`
+	Timestamp time.Time `json:"timestamp"`
+	Amount    float64   `json:"amount"`
+	UserID    uuid.UUID `json:"userId"`
+	AccountID uuid.UUID `json:"accountId"`
+}
