@@ -4,3 +4,5 @@ database:
   user: "wallet"
   password: "wallet"
   dbname: "wallet"
+
+app_secret_key: "eQig7GS4cHO2su"
