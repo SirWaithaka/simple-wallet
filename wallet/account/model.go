@@ -1,5 +1,32 @@
 package account
 
-//Account id, balance, creation date,
-//last update date, status (active, frozen, suspended etc ),
-//user ID, account type (savings, current, utility etc) ,
+import (
+	"time"
+
+	uuid "github.com/satori/go.uuid"
+)
+
+const (
+	StatusActive    = "active"
+	StatusFrozen    = "frozen"
+	StatusSuspended = "suspended"
+)
+
+const (
+	// different types of accounts a user could hold
+	// we will use current account only.
+	TypeSavings = "savings"
+	TypeCurrent = "current"
+	TypeUtility = "utility"
+)
+
+type Account struct {
+	ID          uuid.UUID `json:"accountId"`
+	Balance     float64   `json:"balance"`
+	Status      string    `json:"status"`
+	AccountType string    `json:"accountType"`
+	UserID      uuid.UUID `json:"userId"`
+
+	CreationDate    time.Time `json:"creationDate"`
+	LastUpdatedDate time.Time `json:"lastUpdatedDate"`
+}
