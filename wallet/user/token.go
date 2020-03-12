@@ -8,7 +8,7 @@ import (
 
 type TokenDetails struct {
 	UserId string `json:"userId"`
-	Email string `json:"email"`
+	Email  string `json:"email"`
 }
 
 type TokenClaims struct {
@@ -45,4 +45,19 @@ func getTokenString(secret string, token *jwt.Token) (string, error) {
 		return "", ErrTokenParsing{message: err.Error()}
 	}
 	return str, nil
+}
+
+func ParseToken(token, secret string, claims *TokenClaims) (*jwt.Token, error) {
+	tok, err := jwt.ParseWithClaims(token, claims, func(*jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+
+	return tok, err
+}
+
+func ValidateToken(tok *jwt.Token) bool {
+	if !tok.Valid {
+		return false
+	}
+	return true
 }

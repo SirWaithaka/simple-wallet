@@ -23,13 +23,14 @@ func (err ErrTokenParsing) Error() string {
 
 // ErrUnauthorized ...
 type ErrUnauthorized struct {
-	message string
+	Message string
 }
 
 func (err ErrUnauthorized) Error() string {
-	return err.message
+	return err.Message
 }
 
+// ErrUserNotFound ...
 type ErrUserNotFound struct {
 	message string
 }
