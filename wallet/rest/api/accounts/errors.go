@@ -36,6 +36,13 @@ func ErrResponse(err error) ErrHTTP {
 			Status:  http.StatusBadRequest,
 		}
 
+	case account.ErrNotEnoughBalance:
+		return ErrHTTP{
+			Error:   reflect.TypeOf(err).Name(),
+			Message: err.Error(),
+			Status:  http.StatusForbidden,
+		}
+
 	default:
 		return ErrHTTP{
 			Error:   reflect.TypeOf(err).Name(),

@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	//"fmt"
 	"time"
 
@@ -76,6 +77,13 @@ func (r repository) Withdraw(userId uuid.UUID, amount uint) (*Account, error) {
 	acc, err := r.isAccAccessible(userId)
 	if err != nil {
 		return nil, err
+	}
+
+	// check that balance is more than amount
+	if acc.Balance < float64(amount) {
+		return nil, ErrNotEnoughBalance{
+			Message: fmt.Sprintf("cannot withdraw %v, your account has %v", amount, acc.Balance),
+		}
 	}
 
 	// update balance with amount: subtract amount

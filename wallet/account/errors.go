@@ -36,6 +36,15 @@ func (err ErrAmountBelowMinimum) Error() string {
 	return err.Message
 }
 
+// ErrNotEnoughBalance
+type ErrNotEnoughBalance struct {
+	Message string
+}
+
+func (err ErrNotEnoughBalance) Error() string {
+	return err.Message
+}
+
 // NewErrUnexpected create a new ErrUnexpected error for when doing
 // queries or anything else for the type user.
 func NewErrUnexpected(err error) *ErrUnexpected {
