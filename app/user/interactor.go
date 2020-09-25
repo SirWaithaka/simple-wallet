@@ -5,7 +5,9 @@ import (
 	"log"
 
 	"simple-wallet/app"
+	"simple-wallet/app/auth"
 	"simple-wallet/app/data"
+	"simple-wallet/app/models"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,7 +15,7 @@ import (
 type Interactor interface {
 	AuthenticateByEmail(email, password string) (SignedUser, error)
 	AuthenticateByPhoneNumber(email, password string) (SignedUser, error)
-	Register(*User) (User, error)
+	Register(*models.User) (models.User, error)
 }
 
 func NewInteractor(config app.Config, userRepo Repository, usersChan data.ChanNewUsers) Interactor {
@@ -66,7 +68,7 @@ func (ui interactor) AuthenticateByPhoneNumber(phoneNo, password string) (Signed
 
 // given a user object and password  verify password then generate
 // an auth token string and return.
-func (ui interactor) authenticateUser(user *User, password string) (string, error) {
+func (ui interactor) authenticateUser(user *models.User, password string) (string, error) {
 	// validate password
 	if isValidPassword := ui.comparePasswords(user.Password, []byte(password)); !isValidPassword {
 		msg := fmt.Sprintf("user or password invalid!")
@@ -74,8 +76,8 @@ func (ui interactor) authenticateUser(user *User, password string) (string, erro
 	}
 
 	// create a token
-	tok := generateToken(user)
-	token, err := getTokenString(ui.config.Secret, tok)
+	tok := auth.GenerateToken(user)
+	token, err := auth.GetTokenString(ui.config.Secret, tok)
 	if err != nil {
 		return "", err
 	}
@@ -106,18 +108,18 @@ func (ui interactor) hashUserPassword(password []byte) (string, error) {
 }
 
 // Register takes in a user object and adds the user to db.
-func (ui interactor) Register(user *User) (User, error) {
+func (ui interactor) Register(user *models.User) (models.User, error) {
 	// hash user password before adding to db.
 	passwordHash, err := ui.hashUserPassword([]byte(user.Password))
 	if err != nil {
-		return User{}, err
+		return models.User{}, err
 	}
 
 	// change password to hashed string
 	user.Password = passwordHash
 	u, err := ui.repository.Add(*user)
 	if err != nil {
-		return User{}, err
+		return models.User{}, err
 	}
 
 	// tell channel listeners that a new user has been created.
@@ -128,7 +130,7 @@ func (ui interactor) Register(user *User) (User, error) {
 // take the newly created user and post them to channel
 // that listens for newly created user and acts upon them
 // like creating an account for them automatically.
-func (ui interactor) postNewUserToChannel(user *User) {
+func (ui interactor) postNewUserToChannel(user *models.User) {
 	newUser := parseToNewUser(*user)
 	go func() { ui.userChannel.Writer <- newUser }()
 }

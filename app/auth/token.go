@@ -1,7 +1,9 @@
-package user
+package auth
 
 import (
 	"time"
+
+	"simple-wallet/app/models"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -17,7 +19,7 @@ type TokenClaims struct {
 	jwt.StandardClaims
 }
 
-func generateToken(user *User) *jwt.Token {
+func GenerateToken(user *models.User) *jwt.Token {
 
 	expirationTime := time.Now().Add(6 * time.Hour).Unix()
 	issuedAt := time.Now().Unix()
@@ -39,7 +41,7 @@ func generateToken(user *User) *jwt.Token {
 	return token
 }
 
-func getTokenString(secret string, token *jwt.Token) (string, error) {
+func GetTokenString(secret string, token *jwt.Token) (string, error) {
 	str, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", ErrTokenParsing{message: err.Error()}

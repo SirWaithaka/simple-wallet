@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"simple-wallet/app/models"
 	"simple-wallet/app/user"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofrs/uuid"
 )
 
-func createUserObject(params RegistrationParams) *user.User {
+func createUserObject(params RegistrationParams) *models.User {
 	id, _ := uuid.NewV4()
 
-	var userObj = user.User{
+	var userObj = models.User{
 		ID:          id,
 		FirstName:   params.FirstName,
 		LastName:    params.LastName,

@@ -4,14 +4,15 @@ import (
 	"time"
 
 	"simple-wallet/app/data"
+	"simple-wallet/app/models"
 
 	"github.com/gofrs/uuid"
 )
 
-func parseToTransaction(newTx data.TransactionContract) *Transaction {
+func parseToTransaction(newTx data.TransactionContract) *models.Transaction {
 	id, _ := uuid.NewV4()
 
-	return &Transaction{
+	return &models.Transaction{
 		ID:        id,
 		Type:      newTx.TxType,
 		Timestamp: time.Now(),

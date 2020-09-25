@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 
+	"simple-wallet/app/auth"
 	"simple-wallet/app/user"
 )
 
@@ -48,7 +49,7 @@ func ErrResponse(err error) ErrHTTP {
 			Status:  http.StatusBadRequest,
 		}
 
-	case user.ErrTokenParsing:
+	case auth.ErrTokenParsing:
 		errHTTP = ErrHTTP{
 			Error:   "ErrServerError",
 			Message: err.Error(),

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"simple-wallet/app/auth"
 	"simple-wallet/app/user"
 
 	"github.com/dgrijalva/jwt-go"
@@ -53,8 +54,8 @@ func AuthByBearerToken(secret string) fiber.Handler {
 			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
 		}
 
-		var claims user.TokenClaims
-		token, err := user.ParseToken(bearer[1], secret, &claims)
+		var claims auth.TokenClaims
+		token, err := auth.ParseToken(bearer[1], secret, &claims)
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
 				errUnauthorized := user.ErrUnauthorized{Message: "invalid signature on token"}
@@ -64,7 +65,7 @@ func AuthByBearerToken(secret string) fiber.Handler {
 			errUnauthorized := user.ErrUnauthorized{Message: "token has expired or is invalid"}
 			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
 		}
-		if valid := user.ValidateToken(token); !valid {
+		if valid := auth.ValidateToken(token); !valid {
 			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(user.ErrUnauthorized{Message: "invalid token"}))
 		}
 

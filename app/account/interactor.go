@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"simple-wallet/app/data"
-	"simple-wallet/app/transaction"
+	"simple-wallet/app/models"
 
 	"github.com/gofrs/uuid"
 )
@@ -40,10 +40,10 @@ type interactor struct {
 	transactionsChannel data.ChanNewTransactions
 }
 
-func (i interactor) CreateAccount(userId uuid.UUID) (Account, error) {
+func (i interactor) CreateAccount(userId uuid.UUID) (models.Account, error) {
 	acc, err := i.repository.Create(userId)
 	if err != nil {
-		return Account{}, err
+		return models.Account{}, err
 	}
 	return acc, nil
 }
@@ -54,7 +54,7 @@ func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
 		return 0, err
 	}
 
-	i.postTransactionDetails(userId, *acc, transaction.TxTypeBalance)
+	i.postTransactionDetails(userId, *acc, models.TxTypeBalance)
 	return acc.Balance, nil
 }
 
@@ -70,7 +70,7 @@ func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
 		return 0, err
 	}
 
-	i.postTransactionDetails(userId, *acc, transaction.TxTypeDeposit)
+	i.postTransactionDetails(userId, *acc, models.TxTypeDeposit)
 	return acc.Balance, nil
 }
 
@@ -89,11 +89,11 @@ func (i interactor) Withdraw(userId uuid.UUID, amount uint) (float64, error) {
 		return 0, err
 	}
 
-	i.postTransactionDetails(userId, *acc, transaction.TxTypeWithdrawal)
+	i.postTransactionDetails(userId, *acc, models.TxTypeWithdrawal)
 	return acc.Balance, nil
 }
 
-func (i interactor) postTransactionDetails(userId uuid.UUID, acc Account, txType string) {
+func (i interactor) postTransactionDetails(userId uuid.UUID, acc models.Account, txType string) {
 	timestamp := time.Now()
 	newTransaction := parseTransactionDetails(userId, acc, txType, timestamp)
 

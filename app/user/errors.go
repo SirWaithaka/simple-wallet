@@ -1,6 +1,10 @@
 package user
 
-import "fmt"
+import (
+	"fmt"
+
+	"simple-wallet/app/models"
+)
 
 // ErrHashPassword
 type ErrHashPassword struct {
@@ -9,15 +13,6 @@ type ErrHashPassword struct {
 }
 
 func (err ErrHashPassword) Error() string {
-	return err.message
-}
-
-// ErrTokenParsing ...
-type ErrTokenParsing struct {
-	message string
-}
-
-func (err ErrTokenParsing) Error() string {
 	return err.message
 }
 
@@ -43,8 +38,8 @@ func (err ErrUserNotFound) Error() string {
 // phone number or email number that are already in the db.
 type ErrUserExists struct {
 	message string
-	inUser  User
-	outUser User
+	inUser  models.User
+	outUser models.User
 }
 
 func (err *ErrUserExists) Error() string {

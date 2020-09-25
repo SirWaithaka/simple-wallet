@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"simple-wallet/app/data"
+	"simple-wallet/app/models"
 
 	"github.com/gofrs/uuid"
 )
 
 type Interactor interface {
-	AddTransaction(Transaction) error
-	GetStatement(userId uuid.UUID) (*[]Transaction, error)
+	AddTransaction(models.Transaction) error
+	GetStatement(userId uuid.UUID) (*[]models.Transaction, error)
 }
 
 type interactor struct {
@@ -30,7 +31,7 @@ func NewInteractor(repository Repository, transChan data.ChanNewTransactions) In
 	return intr
 }
 
-func (i interactor) AddTransaction(tx Transaction) error {
+func (i interactor) AddTransaction(tx models.Transaction) error {
 	_, err := i.repository.Add(tx)
 	if err != nil {
 		// if we get an error we are going to add the
@@ -42,7 +43,7 @@ func (i interactor) AddTransaction(tx Transaction) error {
 	return nil
 }
 
-func (i interactor) GetStatement(userId uuid.UUID) (*[]Transaction, error) {
+func (i interactor) GetStatement(userId uuid.UUID) (*[]models.Transaction, error) {
 	now := time.Now()
 	transactions, err := i.repository.GetTransactions(userId, now, 5)
 	if err != nil {
