@@ -1,7 +1,9 @@
 package user
 
 import (
+	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 
 	"github.com/gofrs/uuid"
@@ -31,14 +33,13 @@ func (r repository) Add(user User) (User, error) {
 	var u User
 
 	// check if user does not exist by email and phone number
-	var notExists bool
-	notExists = r.database.Where(User{Email: user.Email}).Or(User{PhoneNumber: user.PhoneNumber}).First(&u).RecordNotFound()
-	if !notExists {
+	result := r.database.Where(User{Email: user.Email}).Or(User{PhoneNumber: user.PhoneNumber}).First(&u)
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		log.Printf("user %v", u)
 		return u, &ErrUserExists{inUser: user, outUser: u}
 	}
 	// add user to db with given email
-	result := r.database.Where(User{Email: user.Email}).Assign(user).FirstOrCreate(&u)
+	result = r.database.Where(User{Email: user.Email}).Assign(user).FirstOrCreate(&u)
 	if err := result.Error; err != nil {
 		return User{}, NewErrUnexpected(err)
 	}
@@ -57,7 +58,7 @@ func (r repository) GetByID(id uuid.UUID) (User, error) {
 	result := r.database.Where("id = ?", id.String()).First(&user)
 
 	// check if no record found.
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with id %v not found", id.String())
 		return User{}, ErrUserNotFound{message: msg}
 	}
@@ -75,7 +76,7 @@ func (r repository) GetByEmail(email string) (User, error) {
 	result := r.database.Where(User{Email: email}).First(&user)
 
 	// check if no record found.
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with email %v not found", email)
 		return User{}, ErrUserNotFound{message: msg}
 	}
@@ -93,7 +94,7 @@ func (r repository) GetByPhoneNumber(phoneNo string) (User, error) {
 	result := r.database.Where(User{PhoneNumber: phoneNo}).First(&user)
 
 	// check if no record found.
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		msg := fmt.Sprintf("user with phone number %v not found", phoneNo)
 		return User{}, ErrUserNotFound{message: msg}
 	}
@@ -106,7 +107,7 @@ func (r repository) GetByPhoneNumber(phoneNo string) (User, error) {
 
 func (r repository) Update(user User) error {
 	var u User
-	result := r.database.Model(&u).Omit("id").Update(user)
+	result := r.database.Model(&u).Omit("id").Updates(user)
 	if err := result.Error; err != nil {
 		return err
 	}

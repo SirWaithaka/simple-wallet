@@ -1,7 +1,10 @@
 package account
 
 import (
+	"errors"
 	"fmt"
+	"gorm.io/gorm"
+
 	//"fmt"
 	"time"
 
@@ -29,15 +32,16 @@ func NewRepository(db *storage.Database) Repository {
 func (r repository) Create(userId uuid.UUID) (Account, error) {
 	// check if user has no account already
 	var acc Account
-	none := r.database.Where(Account{UserID: userId}).First(&acc).RecordNotFound()
-	if !none {
+	result := r.database.Where(Account{UserID: userId}).First(&acc)
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// if a record found we return custom error
 		err := ErrUserHasAccount{userId: acc.UserID.String(), accountId: acc.ID.String()}
 		return Account{}, err
 	}
 
 	// create account
 	newAcc := zeroAccount(userId)
-	result := r.database.Where(Account{UserID: userId}).Assign(newAcc).FirstOrCreate(&acc)
+	result = r.database.Where(Account{UserID: userId}).Assign(newAcc).FirstOrCreate(&acc)
 	if err := result.Error; err != nil {
 		return Account{}, NewErrUnexpected(err)
 	}
@@ -98,8 +102,8 @@ func (r repository) Withdraw(userId uuid.UUID, amount uint) (*Account, error) {
 
 func (r repository) isAccAccessible(userId uuid.UUID) (*Account, error) {
 	var acc Account
-	none := r.database.Where(Account{UserID: userId}).First(&acc).RecordNotFound()
-	if none {
+	result := r.database.Where(Account{UserID: userId}).First(&acc)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		err := ErrAccountAccess{reason: "Not Created. Report issue"}
 		return nil, err
 	}

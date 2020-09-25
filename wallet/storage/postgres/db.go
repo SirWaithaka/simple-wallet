@@ -1,17 +1,17 @@
 package postgres
 
 import (
+	"fmt"
 	"sync"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"wallet"
 	"wallet/storage"
 )
 
 var once sync.Once
-
 
 // NewDatabase creates a new Database object
 func NewDatabase(config wallet.Config) (*storage.Database, error) {
@@ -22,7 +22,8 @@ func NewDatabase(config wallet.Config) (*storage.Database, error) {
 
 	var conn *gorm.DB
 	once.Do(func() {
-		conn, err = gorm.Open("postgres", config.DB.String("disable"))
+		dsn := fmt.Sprintf("user=%s password=%s dbname=%s port=%s", config.DB.User)
+		conn, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	})
 
 	if err != nil {
@@ -32,4 +33,3 @@ func NewDatabase(config wallet.Config) (*storage.Database, error) {
 
 	return db, nil
 }
-

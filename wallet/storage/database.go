@@ -2,7 +2,7 @@ package storage
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 
@@ -12,7 +12,8 @@ type Database struct {
 }
 
 func(db *Database) Close() {
-	err := db.DB.Close()
+	d, err := db.DB.DB()
+	err = d.Close()
 	if err != nil {
 		fmt.Printf("Error closing db: %v\n", err)
 	}
