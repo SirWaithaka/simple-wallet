@@ -5,7 +5,7 @@ import (
 	//"fmt"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 
 	"wallet/storage"
 )
@@ -112,8 +112,10 @@ func (r repository) isAccAccessible(userId uuid.UUID) (*Account, error) {
 }
 
 func zeroAccount(userId uuid.UUID) *Account {
+	id, _ := uuid.NewV4()
+
 	return &Account{
-		ID:              uuid.NewV4(),
+		ID:              id,
 		Balance:         0,
 		Status:          StatusActive,
 		AccountType:     TypeCurrent,

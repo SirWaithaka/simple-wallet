@@ -2,8 +2,8 @@ package accounts
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
 	"wallet/account"
 	"wallet/transaction"
 )
@@ -13,20 +13,19 @@ type param struct {
 }
 
 // BalanceEnquiry ...
-func BalanceEnquiry(interactor account.Interactor) func(*fiber.Ctx) {
+func BalanceEnquiry(interactor account.Interactor) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 		var userDetails = ctx.Locals("userDetails").(map[string]string)
 		userId := userDetails["userId"]
 
 		balance, err := interactor.GetBalance(uuid.FromStringOrNil(userId))
 		if err != nil {
 			errHTTP := ErrResponse(err)
-			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
-			return
+			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
-		_ = ctx.JSON(map[string]interface{}{
+		return ctx.JSON(map[string]interface{}{
 			"message": fmt.Sprintf("Your current balance is %v", balance),
 			"balance": balance,
 		})
@@ -36,9 +35,9 @@ func BalanceEnquiry(interactor account.Interactor) func(*fiber.Ctx) {
 
 // Deposit allows user to deposit or credit their
 // account.
-func Deposit(interactor account.Interactor) func(*fiber.Ctx) {
+func Deposit(interactor account.Interactor) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 		var userDetails = ctx.Locals("userDetails").(map[string]string)
 		userId := userDetails["userId"]
 
@@ -48,11 +47,10 @@ func Deposit(interactor account.Interactor) func(*fiber.Ctx) {
 		balance, err := interactor.Deposit(uuid.FromStringOrNil(userId), p.Amount)
 		if err != nil {
 			errHTTP := ErrResponse(err)
-			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
-			return
+			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
-		_ = ctx.JSON(map[string]interface{}{
+		return ctx.JSON(map[string]interface{}{
 			"message": fmt.Sprintf("Amount successfully deposited new balance %v", balance),
 			"balance": balance,
 			"userId": userId,
@@ -62,9 +60,9 @@ func Deposit(interactor account.Interactor) func(*fiber.Ctx) {
 
 // Withdraw allows user to withdraw or debit their
 // account.
-func Withdraw(interactor account.Interactor) func(*fiber.Ctx) {
+func Withdraw(interactor account.Interactor) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 		var userDetails = ctx.Locals("userDetails").(map[string]string)
 		userId := userDetails["userId"]
 
@@ -74,11 +72,10 @@ func Withdraw(interactor account.Interactor) func(*fiber.Ctx) {
 		balance, err := interactor.Withdraw(uuid.FromStringOrNil(userId), p.Amount)
 		if err != nil {
 			errHTTP := ErrResponse(err)
-			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
-			return
+			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
-		_ = ctx.JSON(map[string]interface{}{
+		return ctx.JSON(map[string]interface{}{
 			"message": fmt.Sprintf("Amount successfully withdrawn new balance %v", balance),
 			"balance": balance,
 			"userId": userId,
@@ -88,20 +85,19 @@ func Withdraw(interactor account.Interactor) func(*fiber.Ctx) {
 
 // MiniStatement returns a small short summary of the
 // most recent transactions on an account.
-func MiniStatement(interactor transaction.Interactor) func(*fiber.Ctx) {
+func MiniStatement(interactor transaction.Interactor) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 		var userDetails = ctx.Locals("userDetails").(map[string]string)
 		userId := userDetails["userId"]
 
 		transactions, err := interactor.GetStatement(uuid.FromStringOrNil(userId))
 		if err != nil {
 			errHTTP := ErrResponse(err)
-			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
-			return
+			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
-		_ = ctx.JSON(map[string]interface{} {
+		return ctx.JSON(map[string]interface{} {
 			"message": fmt.Sprintf("ministatement retrieved for the past 5 transactions"),
 			"userId": userId,
 			"transactions": transactions,

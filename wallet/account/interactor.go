@@ -6,7 +6,7 @@ import (
 	"time"
 	"wallet/transaction"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 
 	"wallet/data"
 )

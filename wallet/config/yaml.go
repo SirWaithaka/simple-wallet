@@ -9,13 +9,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-
 type DatabaseConfig struct {
-	User string `yaml:"user"`
+	User     string `yaml:"user"`
 	Password string `yaml:"password"`
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
-	DBName string `yaml:"dbname"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	DBName   string `yaml:"dbname"`
 }
 
 // This maps the configuration in the yaml file
