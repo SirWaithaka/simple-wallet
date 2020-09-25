@@ -3,14 +3,16 @@ package transaction
 import (
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 
 	"wallet/data"
 )
 
 func parseToTransaction(newTx data.TransactionContract) *Transaction {
+	id, _ := uuid.NewV4()
+
 	return &Transaction{
-		ID:        uuid.NewV4(),
+		ID:        id,
 		Type:      newTx.TxType,
 		Timestamp: time.Now(),
 		Amount:    newTx.Amount,

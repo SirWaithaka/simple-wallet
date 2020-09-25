@@ -1,7 +1,7 @@
 package user
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 //Names according to national id/passport,

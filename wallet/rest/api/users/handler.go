@@ -2,17 +2,18 @@ package users
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
 	"net/http"
 
 	"wallet/user"
 )
 
 func createUserObject(params RegistrationParams) *user.User {
+	id, _ := uuid.NewV4()
 
 	var userObj = user.User{
-		ID:          uuid.NewV4(),
+		ID:          id,
 		FirstName:   params.FirstName,
 		LastName:    params.LastName,
 		Email:       params.Email,
@@ -24,9 +25,9 @@ func createUserObject(params RegistrationParams) *user.User {
 
 }
 
-func Authenticate(userDomain user.Interactor) func(*fiber.Ctx) {
+func Authenticate(userDomain user.Interactor) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 		var params LoginParams
 		_ = ctx.BodyParser(&params)
 
@@ -34,8 +35,7 @@ func Authenticate(userDomain user.Interactor) func(*fiber.Ctx) {
 			err := ErrResponse(ErrInvalidParams{
 				message: fmt.Sprintf("provide email or phone number to sign in."),
 			})
-			_  = ctx.Status(err.Status).JSON(err)
-			return
+			return ctx.Status(err.Status).JSON(err)
 		}
 
 		var authErr error
@@ -54,18 +54,19 @@ func Authenticate(userDomain user.Interactor) func(*fiber.Ctx) {
 		// if there is an error authenticating user.
 		if authErr != nil {
 			err := ErrResponse(authErr)
-			_ = ctx.Status(err.Status).JSON(err)
-			return
+			return ctx.Status(err.Status).JSON(err)
 		}
 
 		// return token
 		_ = ctx.Status(http.StatusOK).JSON(signedUser)
+
+		return nil
 	}
 }
 
-func Register(userDomain user.Interactor) func(*fiber.Ctx) {
+func Register(userDomain user.Interactor) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 
 		var params RegistrationParams
 		_ = ctx.BodyParser(&params)
@@ -73,8 +74,7 @@ func Register(userDomain user.Interactor) func(*fiber.Ctx) {
 		_, err := ValidateRegisterParams(&params)
 		if err != nil {
 			errHTTP := ErrResponse(err)
-			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
-			return
+			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
 		newUser := createUserObject(params)
@@ -82,11 +82,12 @@ func Register(userDomain user.Interactor) func(*fiber.Ctx) {
 		u, err := userDomain.Register(newUser)
 		if err != nil {
 			errHTTP := ErrResponse(err)
-			_ = ctx.Status(errHTTP.Status).JSON(errHTTP)
-			return
+			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
 		// we use a presenter to reformat the response of user.
 		_ = ctx.JSON(user.RegistrationResponse(&u))
+
+		return nil
 	}
 }

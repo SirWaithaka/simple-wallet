@@ -1,8 +1,8 @@
 package rest
 
 import (
-	"github.com/gofiber/fiber"
-	fibermiddleware "github.com/gofiber/fiber/middleware"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"wallet"
 
 	"wallet/registry"
@@ -14,12 +14,13 @@ import (
 func Router(fiberApp *fiber.App, domain *registry.Domain, config wallet.Config) {
 
 	apiGroup := fiberApp.Group("/api")
-	apiGroup.Use(fibermiddleware.Logger())
+	apiGroup.Use(logger.New())
 
 	apiRouteGroup(apiGroup, domain, config)
 }
 
-func apiRouteGroup(g *fiber.Group, domain *registry.Domain, config wallet.Config) {
+func apiRouteGroup(g fiber.Router, domain *registry.Domain, config wallet.Config) {
+
 	g.Post("/login", users.Authenticate(domain.User))
 	g.Post("/user", users.Register(domain.User))
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 
 	"wallet/user"
 )
@@ -35,24 +35,22 @@ func NewErrHTTP(err error) ErrHTTP {
 	}
 }
 
-func AuthByBearerToken(secret string) func(*fiber.Ctx) {
+func AuthByBearerToken(secret string) fiber.Handler {
 
-	return func(ctx *fiber.Ctx) {
+	return func(ctx *fiber.Ctx) error {
 
 		// check that the header is actually set
 		header := ctx.Get("Authorization")
 		if header == "" {
 			err := user.ErrUnauthorized{Message: "authorization header not set"}
-			_ = ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
-			return
+			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
 		}
 
 		// check that the token value in header is set
 		bearer := strings.Split(header, " ")
 		if len(bearer) < 2 || bearer[1] == "" {
 			err := user.ErrUnauthorized{Message: "authentication token not set"}
-			_ = ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
-			return
+			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
 		}
 
 		var claims user.TokenClaims
@@ -60,25 +58,22 @@ func AuthByBearerToken(secret string) func(*fiber.Ctx) {
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
 				errUnauthorized := user.ErrUnauthorized{Message: "invalid signature on token"}
-				_ = ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
-				return
+				return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
 			}
 
 			errUnauthorized := user.ErrUnauthorized{Message: "token has expired or is invalid"}
-			_ = ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
-			return
+			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
 		}
 		if valid := user.ValidateToken(token); !valid {
-			_ = ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(user.ErrUnauthorized{Message: "invalid token"}))
-			return
+			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(user.ErrUnauthorized{Message: "invalid token"}))
 		}
 
 		userDetails := map[string]string{
 			"userId": claims.User.UserId,
-			"email": claims.User.Email,
+			"email":  claims.User.Email,
 		}
 		ctx.Locals("userDetails", userDetails)
 
-		ctx.Next()
+		return ctx.Next()
 	}
 }

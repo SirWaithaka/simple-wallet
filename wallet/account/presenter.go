@@ -1,7 +1,7 @@
 package account
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"time"
 
 	"wallet/data"

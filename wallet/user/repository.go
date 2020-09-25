@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"log"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 
 	"wallet/storage"
 )
-
 
 type Repository interface {
 	Add(User) (User, error)
@@ -19,9 +18,8 @@ type Repository interface {
 	Update(User) error
 }
 
-
 func NewRepository(db *storage.Database) Repository {
-	return &repository{database:db}
+	return &repository{database: db}
 }
 
 type repository struct {
@@ -40,7 +38,7 @@ func (r repository) Add(user User) (User, error) {
 		return u, &ErrUserExists{inUser: user, outUser: u}
 	}
 	// add user to db with given email
-	result := r.database.Where(User{Email: user.Email,}).Assign(user).FirstOrCreate(&u)
+	result := r.database.Where(User{Email: user.Email}).Assign(user).FirstOrCreate(&u)
 	if err := result.Error; err != nil {
 		return User{}, NewErrUnexpected(err)
 	}
@@ -74,7 +72,7 @@ func (r repository) GetByEmail(email string) (User, error) {
 	var user User
 
 	// perform query
-	result := r.database.Where(User{Email:email}).First(&user)
+	result := r.database.Where(User{Email: email}).First(&user)
 
 	// check if no record found.
 	if result.RecordNotFound() {

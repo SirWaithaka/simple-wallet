@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	"log"
 	"os"
 	"wallet"
