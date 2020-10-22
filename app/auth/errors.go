@@ -1,11 +1,11 @@
 package auth
 
-// ErrTokenParsing ...
-type ErrTokenParsing struct {
+// TokenParsingError ...
+type TokenParsingError struct {
 	message string
 }
 
-func (err ErrTokenParsing) Error() string {
+func (err TokenParsingError) Error() string {
 	return err.message
 }
 

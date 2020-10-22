@@ -1,11 +1,11 @@
 package auth
 
 import (
+	"log"
 	"time"
 
-	"simple-wallet/app/models"
-
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 )
 
 type TokenDetails struct {
@@ -19,14 +19,14 @@ type TokenClaims struct {
 	jwt.StandardClaims
 }
 
-func GenerateToken(user *models.User) *jwt.Token {
+func generateToken(userID uuid.UUID) *jwt.Token {
 
-	expirationTime := time.Now().Add(6 * time.Hour).Unix()
 	issuedAt := time.Now().Unix()
+	expirationTime := time.Now().Add(6 * time.Hour).Unix()
+
 	claims := TokenClaims{
 		User: TokenDetails{
-			UserId: user.ID.String(),
-			Email:  user.Email,
+			UserId: userID.String(),
 		},
 
 		StandardClaims: jwt.StandardClaims{
@@ -41,10 +41,14 @@ func GenerateToken(user *models.User) *jwt.Token {
 	return token
 }
 
-func GetTokenString(secret string, token *jwt.Token) (string, error) {
+// GetTokenString generates a jwt access token for a user
+func GetTokenString(userID uuid.UUID, secret string) (string, error) {
+	token := generateToken(userID)
+
 	str, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return "", ErrTokenParsing{message: err.Error()}
+	if err != nil { // we have an error generating the token i.e. "500"
+		log.Println(err)
+		return "", TokenParsingError{message: err.Error()}
 	}
 	return str, nil
 }
