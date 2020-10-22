@@ -5,6 +5,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// SignedUser properties of an authenticated user
+type SignedUser struct {
+	UserID string `json:"userId"`
+	Token  string `json:"token"`
+}
+
 // User entity definition
 type User struct {
 	gorm.Model // embed created_at, deleted_at, updated_at
