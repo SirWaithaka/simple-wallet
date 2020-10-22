@@ -1,31 +1,14 @@
-package users
+package handlers
 
 import (
 	"fmt"
 	"net/http"
 
-	"simple-wallet/app/models"
+	"simple-wallet/app/routing/handlers/users"
 	"simple-wallet/app/user"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofrs/uuid"
 )
-
-func createUserObject(params RegistrationParams) *models.User {
-	id, _ := uuid.NewV4()
-
-	var userObj = models.User{
-		ID:          id,
-		FirstName:   params.FirstName,
-		LastName:    params.LastName,
-		Email:       params.Email,
-		PhoneNumber: params.PhoneNumber,
-		Password:    params.Password,
-		PassportNo:  params.PassportNo,
-	}
-	return &userObj
-
-}
 
 func Authenticate(userDomain user.Interactor) fiber.Handler {
 
@@ -34,7 +17,7 @@ func Authenticate(userDomain user.Interactor) fiber.Handler {
 		_ = ctx.BodyParser(&params)
 
 		if params.Email == "" && params.PhoneNumber == "" {
-			err := ErrResponse(ErrInvalidParams{
+			err := users.ErrResponse(users.ErrInvalidParams{
 				message: fmt.Sprintf("provide email or phone number to sign in."),
 			})
 			return ctx.Status(err.Status).JSON(err)
@@ -55,7 +38,7 @@ func Authenticate(userDomain user.Interactor) fiber.Handler {
 
 		// if there is an error authenticating user.
 		if authErr != nil {
-			err := ErrResponse(authErr)
+			err := users.ErrResponse(authErr)
 			return ctx.Status(err.Status).JSON(err)
 		}
 
@@ -70,20 +53,19 @@ func Register(userDomain user.Interactor) fiber.Handler {
 
 	return func(ctx *fiber.Ctx) error {
 
-		var params RegistrationParams
+		var params user.RegistrationParams
 		_ = ctx.BodyParser(&params)
 
-		_, err := ValidateRegisterParams(&params)
+		err := params.Validate()
 		if err != nil {
-			errHTTP := ErrResponse(err)
+			errHTTP := users.ErrResponse(err)
 			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 
-		newUser := createUserObject(params)
 		// register user
-		u, err := userDomain.Register(newUser)
+		u, err := userDomain.Register(params)
 		if err != nil {
-			errHTTP := ErrResponse(err)
+			errHTTP := users.ErrResponse(err)
 			return ctx.Status(errHTTP.Status).JSON(errHTTP)
 		}
 

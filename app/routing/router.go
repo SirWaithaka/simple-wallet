@@ -1,11 +1,11 @@
-package rest
+package routing
 
 import (
 	"simple-wallet/app"
 	"simple-wallet/app/registry"
-	"simple-wallet/app/rest/api/accounts"
-	"simple-wallet/app/rest/api/middleware"
-	"simple-wallet/app/rest/api/users"
+	"simple-wallet/app/routing/api/accounts"
+	"simple-wallet/app/routing/api/middleware"
+	"simple-wallet/app/routing/api/users"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
