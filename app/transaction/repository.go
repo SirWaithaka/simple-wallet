@@ -3,6 +3,7 @@ package transaction
 import (
 	"time"
 
+	"simple-wallet/app/errors"
 	"simple-wallet/app/models"
 	"simple-wallet/app/storage"
 
@@ -25,7 +26,7 @@ func NewRepository(db *storage.Database) Repository {
 func (r repository) Add(tx models.Transaction) (models.Transaction, error) {
 	result := r.database.Create(&tx)
 	if err := result.Error; err != nil {
-		return models.Transaction{}, NewErrUnexpected(err)
+		return models.Transaction{}, errors.Error{Err: err, Code: errors.EINTERNAL}
 	}
 
 	return tx, nil
@@ -41,7 +42,7 @@ func (r repository) GetTransactions(userId uuid.UUID, from time.Time, limit int)
 	).Order("timestamp desc").Limit(limit).Find(&transactions)
 
 	if err := result.Error; err != nil {
-		return nil, err
+		return nil, errors.Error{Err: err, Code: errors.EINTERNAL}
 	}
 
 	return &transactions, nil
