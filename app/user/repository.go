@@ -36,7 +36,7 @@ func (r repository) searchBy(row models.User) (models.User, error) {
 		return models.User{}, errors.Error{Code: errors.ENOTFOUND}
 	}
 	if err := result.Error; err != nil {
-		return models.User{}, err
+		return models.User{}, errors.Error{Err: err, Code: errors.EINTERNAL}
 	}
 
 	return user, nil
@@ -50,9 +50,10 @@ func (r repository) Add(user models.User) (models.User, error) {
 	if result.Error != nil {
 		// we check if the error is a postgres unique constraint violation
 		if pgerr, ok := result.Error.(*pgconn.PgError); ok && pgerr.Code == "23505" {
-			return user, errors.Error{Err: result.Error, Code: errors.EDUPLICATE}
+			e := errors.ErrUserExists{Err: result.Error}
+			return user, errors.Error{Err: e, Code: errors.EDUPLICATE}
 		}
-		return models.User{}, result.Error
+		return models.User{}, errors.Error{Err: result.Error, Code: errors.EINTERNAL}
 	}
 
 	return user, nil
