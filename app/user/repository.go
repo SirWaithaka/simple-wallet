@@ -1,14 +1,12 @@
 package user
 
 import (
-	"errors"
-	"fmt"
-	"log"
-
+	"simple-wallet/app/errors"
 	"simple-wallet/app/models"
 	"simple-wallet/app/storage"
 
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -18,99 +16,96 @@ type Repository interface {
 	GetByID(uuid.UUID) (models.User, error)
 	GetByEmail(string) (models.User, error)
 	GetByPhoneNumber(string) (models.User, error)
+	GetByEmailOrPhone(string) (models.User, error)
 	Update(models.User) error
 }
 
-func NewRepository(db *storage.Database) Repository {
-	return &repository{database: db}
+func NewRepository(database *storage.Database) Repository {
+	return &repository{db: database}
 }
 
 type repository struct {
-	database *storage.Database
+	db *storage.Database
+}
+
+func (r repository) searchBy(row models.User) (models.User, error) {
+	var user models.User
+	result := r.db.Where(row).First(&user)
+	// check if no record found.
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return models.User{}, errors.Error{Code: errors.ENOTFOUND}
+	}
+	if err := result.Error; err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
 }
 
 // Add a user if already not in db.
 func (r repository) Add(user models.User) (models.User, error) {
-	var u models.User
-
-	// check if user does not exist by email and phone number
-	result := r.database.Where(models.User{Email: user.Email}).Or(models.User{PhoneNumber: user.PhoneNumber}).First(&u)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		log.Printf("user %v", u)
-		return u, &ErrUserExists{inUser: user, outUser: u}
-	}
-	// add user to db with given email
-	result = r.database.Where(models.User{Email: user.Email}).Assign(user).FirstOrCreate(&u)
-	if err := result.Error; err != nil {
-		return models.User{}, NewErrUnexpected(err)
+	// add new user to users table, if query return violation of unique key column,
+	// we know that the user with given record exists and return that user instead
+	result := r.db.Where(models.User{Email: user.Email}).FirstOrCreate(&user)
+	if result.Error != nil {
+		// we check if the error is a postgres unique constraint violation
+		if pgerr, ok := result.Error.(*pgconn.PgError); ok && pgerr.Code == "23505" {
+			return user, errors.Error{Err: result.Error, Code: errors.EDUPLICATE}
+		}
+		return models.User{}, result.Error
 	}
 
-	return u, nil
+	return user, nil
 }
 
+// Delete a user
 func (r repository) Delete(user models.User) error {
-	result := r.database.Delete(&user)
-	return NewErrUnexpected(result.Error)
+	result := r.db.Delete(&user)
+	if result.Error != nil {
+		return errors.Error{Err: result.Error, Code: errors.EINTERNAL}
+	}
+	return nil
 }
 
+// GetByID searches user by primary id
 func (r repository) GetByID(id uuid.UUID) (models.User, error) {
-	var user models.User
-
-	result := r.database.Where("id = ?", id.String()).First(&user)
-
-	// check if no record found.
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with id %v not found", id.String())
-		return models.User{}, ErrUserNotFound{message: msg}
-	}
-
-	if err := result.Error; err != nil {
-		return models.User{}, err
-	}
-	return user, nil
+	user, err := r.searchBy(models.User{ID: id})
+	return user, err
 }
 
+// GetByEmail searches user by email
 func (r repository) GetByEmail(email string) (models.User, error) {
-	var user models.User
-
-	// perform query
-	result := r.database.Where(models.User{Email: email}).First(&user)
-
-	// check if no record found.
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with email %v not found", email)
-		return models.User{}, ErrUserNotFound{message: msg}
-	}
-
-	// if any other error, return.
-	if err := result.Error; err != nil {
-		return models.User{}, err
-	}
-	return user, nil
+	user, err := r.searchBy(models.User{Email: email})
+	return user, err
 }
 
+// GetByPhoneNumber searches user by phone number
 func (r repository) GetByPhoneNumber(phoneNo string) (models.User, error) {
+	user, err := r.searchBy(models.User{PhoneNumber: phoneNo})
+	return user, err
+}
+
+// GetByEmailOrPhone
+func (r repository) GetByEmailOrPhone(value string) (models.User, error) {
 	var user models.User
-
-	result := r.database.Where(models.User{PhoneNumber: phoneNo}).First(&user)
-
+	result := r.db.Model(models.User{}).Where(models.User{Email: value}).Or(models.User{PhoneNumber: value}).First(&user)
 	// check if no record found.
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		msg := fmt.Sprintf("user with phone number %v not found", phoneNo)
-		return models.User{}, ErrUserNotFound{message: msg}
+		return models.User{}, errors.Error{Code: errors.ENOTFOUND}
+	}
+	if err := result.Error; err != nil {
+		return models.User{}, errors.Error{Err: result.Error, Code: errors.EINTERNAL}
 	}
 
-	if err := result.Error; err != nil {
-		return models.User{}, err
-	}
 	return user, nil
 }
 
+// Update
 func (r repository) Update(user models.User) error {
 	var u models.User
-	result := r.database.Model(&u).Omit("id").Updates(user)
+	result := r.db.Model(&u).Omit("id").Updates(user)
 	if err := result.Error; err != nil {
-		return err
+		return errors.Error{Err: result.Error, Code: errors.EINTERNAL}
 	}
 	return nil
 }
