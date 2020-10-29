@@ -1,9 +1,8 @@
 package models
 
 import (
-	"time"
-
 	"github.com/gofrs/uuid"
+	"gorm.io/gorm"
 )
 
 // AccountStatus (active,dormant,frozen,suspended)
@@ -22,19 +21,18 @@ const (
 const (
 	// different types of accounts a user could hold
 	// we will use current account only.
-	TypeSavings = AccountType("savings")
-	TypeCurrent = AccountType("current")
-	TypeUtility = AccountType("utility")
+	AccTypeSavings = AccountType("savings")
+	AccTypeCurrent = AccountType("current")
+	AccTypeUtility = AccountType("utility")
 )
 
 // Account entity definition
 type Account struct {
-	ID          uuid.UUID     `json:"accountId"`
-	Balance     float64       `json:"balance"`
-	Status      AccountStatus `json:"status"`
-	AccountType AccountType   `json:"accountType"`
-	UserID      uuid.UUID     `json:"userId"`
+	gorm.Model
 
-	CreationDate    time.Time `json:"creationDate"`
-	LastUpdatedDate time.Time `json:"lastUpdatedDate"`
+	ID          uuid.UUID
+	Balance     float64       `gorm:"column:balance"`
+	Status      AccountStatus `gorm:"column:status"`
+	AccountType AccountType   `gorm:"column:account_type"`
+	UserID      uuid.UUID     `gorm:"column:user_id;not null;unique"` // a user can only have one account
 }
