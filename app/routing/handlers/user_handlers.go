@@ -1,48 +1,53 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
-	"simple-wallet/app/routing/handlers/users"
+	"simple-wallet/app"
+	"simple-wallet/app/auth"
+	"simple-wallet/app/models"
 	"simple-wallet/app/user"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func Authenticate(userDomain user.Interactor) fiber.Handler {
+func Authenticate(userDomain user.Interactor, config app.Config) fiber.Handler {
 
 	return func(ctx *fiber.Ctx) error {
-		var params LoginParams
+		var params user.LoginParams
 		_ = ctx.BodyParser(&params)
 
-		if params.Email == "" && params.PhoneNumber == "" {
-			err := users.ErrResponse(users.ErrInvalidParams{
-				message: fmt.Sprintf("provide email or phone number to sign in."),
-			})
-			return ctx.Status(err.Status).JSON(err)
+		err := params.Validate()
+		if err != nil {
+			return ctx.Status(http.StatusBadRequest).JSON(err)
 		}
 
-		var authErr error
-		var signedUser user.SignedUser
+		// user we are authenticating
+		var u models.User
 		switch {
 		case params.Email != "":
 			// if email parameter not empty authenticate by email.
-			signedUser, authErr = userDomain.AuthenticateByEmail(params.Email, params.Password)
+			u, err = userDomain.AuthenticateByEmail(params.Email, params.Password)
 		case params.PhoneNumber != "":
 			// if phone number parameter not empty authenticate by phone number.
-			signedUser, authErr = userDomain.AuthenticateByPhoneNumber(params.PhoneNumber, params.Password)
-		default:
-			authErr = nil
+			u, err = userDomain.AuthenticateByPhoneNumber(params.PhoneNumber, params.Password)
 		}
 
 		// if there is an error authenticating user.
-		if authErr != nil {
-			err := users.ErrResponse(authErr)
-			return ctx.Status(err.Status).JSON(err)
+		if err != nil {
+			return ctx.Status(http.StatusBadRequest).JSON(err)
 		}
 
-		// return token
+		// generate an auth token string
+		token, err := auth.GetTokenString(u.ID, config.Secret)
+		if err != nil {
+
+		}
+
+		signedUser := models.SignedUser{
+			UserID: u.ID.String(),
+			Token:  token,
+		}
 		_ = ctx.Status(http.StatusOK).JSON(signedUser)
 
 		return nil
@@ -58,15 +63,13 @@ func Register(userDomain user.Interactor) fiber.Handler {
 
 		err := params.Validate()
 		if err != nil {
-			errHTTP := users.ErrResponse(err)
-			return ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return ctx.Status(http.StatusBadRequest).JSON(err)
 		}
 
 		// register user
 		u, err := userDomain.Register(params)
 		if err != nil {
-			errHTTP := users.ErrResponse(err)
-			return ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return ctx.Status(http.StatusBadRequest).JSON(err)
 		}
 
 		// we use a presenter to reformat the response of user.
