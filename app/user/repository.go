@@ -46,12 +46,11 @@ func (r repository) searchBy(row models.User) (models.User, error) {
 func (r repository) Add(user models.User) (models.User, error) {
 	// add new user to users table, if query return violation of unique key column,
 	// we know that the user with given record exists and return that user instead
-	result := r.db.Where(models.User{Email: user.Email}).FirstOrCreate(&user)
-	if result.Error != nil {
+	result := r.db.Model(models.User{}).Create(&user)
+	if err := result.Error; err != nil {
 		// we check if the error is a postgres unique constraint violation
-		if pgerr, ok := result.Error.(*pgconn.PgError); ok && pgerr.Code == "23505" {
-			e := errors.ErrUserExists{Err: result.Error}
-			return user, errors.Error{Err: e, Code: errors.EDUPLICATE}
+		if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == "23505" {
+			return user, errors.Error{Err: err, Code: errors.ECONFLICT, Message: errors.ErrUserExists}
 		}
 		return models.User{}, errors.Error{Err: result.Error, Code: errors.EINTERNAL}
 	}

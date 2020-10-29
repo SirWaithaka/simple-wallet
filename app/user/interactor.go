@@ -33,7 +33,7 @@ func (ui interactor) AuthenticateByEmail(email, password string) (models.User, e
 	// search for user by email.
 	user, err := ui.repository.GetByEmail(email)
 	if errors.ErrorCode(err) == errors.ENOTFOUND {
-		return models.User{}, errors.Error{Err: errors.ErrUserNotFound("user not found")}
+		return models.User{}, errors.Error{Message: errors.ErrUserNotFound}
 	} else if err != nil {
 		return models.User{}, err
 	}
@@ -51,7 +51,7 @@ func (ui interactor) AuthenticateByPhoneNumber(phoneNo, password string) (models
 	// search for user by phone number.
 	user, err := ui.repository.GetByPhoneNumber(phoneNo)
 	if errors.ErrorCode(err) == errors.ENOTFOUND {
-		return models.User{}, errors.Error{Err: errors.ErrUserNotFound("user not found")}
+		return models.User{}, errors.Error{Message: errors.ErrUserNotFound}
 	} else if err != nil {
 		return models.User{}, err
 	}
