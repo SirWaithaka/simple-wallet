@@ -1,21 +1,11 @@
 package errors
 
-// ErrUserNotFound
-type ErrUserNotFound string
-
-func (e ErrUserNotFound) Error() string {
-	return string(e)
-}
-
-// ErrUserExists returned when adding a user with
-// phone number or email number that are already in the db.
-type ErrUserExists struct {
-	Err error
-}
-
-func (e ErrUserExists) Error() string {
-	return "user already exists"
-}
+const (
+	// ErrUserExists returned when adding a user with
+	// phone number or email number that are already in the db.
+	ErrUserExists   = ErrorMessage("user already exists")
+	ErrUserNotFound = ErrorMessage("user not found")
+)
 
 // ErrInvalidCredentials
 type ErrInvalidCredentials ErrorT
