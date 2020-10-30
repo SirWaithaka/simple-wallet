@@ -1,4 +1,4 @@
-package accounts
+package account_handlers
 
 import (
 	"net/http"
