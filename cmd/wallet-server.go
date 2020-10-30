@@ -10,8 +10,6 @@ import (
 	"simple-wallet/app/routing"
 	"simple-wallet/app/storage/postgres"
 	"simple-wallet/configs"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -35,8 +33,7 @@ func main() {
 	domain := registry.NewDomain(confg, database, channels)
 
 	// create the fiber server.
-	server := fiber.New()
-	routing.Router(server, domain, confg) // add endpoints
+	server := routing.Router(domain, confg) // add endpoints
 
 	// listen and serve
 	port := fmt.Sprintf(":%v", 6700)

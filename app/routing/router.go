@@ -4,6 +4,7 @@ import (
 	"simple-wallet/app"
 	"simple-wallet/app/registry"
 	"simple-wallet/app/routing/account_handlers"
+	"simple-wallet/app/routing/error_handlers"
 	"simple-wallet/app/routing/middleware"
 	"simple-wallet/app/routing/user_handlers"
 
@@ -11,12 +12,18 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func Router(fiberApp *fiber.App, domain *registry.Domain, config app.Config) {
+func Router(domain *registry.Domain, config app.Config) *fiber.App {
 
-	apiGroup := fiberApp.Group("/api")
+	srv := fiber.New(
+		fiber.Config{ErrorHandler: error_handlers.ErrorHandler},
+	)
+
+	apiGroup := srv.Group("/api")
 	apiGroup.Use(logger.New())
 
 	apiRouteGroup(apiGroup, domain, config)
+
+	return srv
 }
 
 func apiRouteGroup(g fiber.Router, domain *registry.Domain, config app.Config) {
