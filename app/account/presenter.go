@@ -13,7 +13,7 @@ func parseTransactionDetails(userId uuid.UUID, acc models.Account, txType string
 	return &data.TransactionContract{
 		UserID:    userId,
 		AccountID: acc.ID,
-		Amount:    acc.Balance,
+		Amount:    acc.Balance(),
 		TxType:    txType,
 		Timestamp: timestamp,
 	}
