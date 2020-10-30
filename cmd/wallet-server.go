@@ -7,7 +7,7 @@ import (
 
 	"simple-wallet/app"
 	"simple-wallet/app/registry"
-	"simple-wallet/app/rest"
+	"simple-wallet/app/routing"
 	"simple-wallet/app/storage/postgres"
 	"simple-wallet/configs"
 
@@ -36,7 +36,7 @@ func main() {
 
 	// create the fiber server.
 	server := fiber.New()
-	rest.Router(server, domain, confg) // add endpoints
+	routing.Router(server, domain, confg) // add endpoints
 
 	// listen and serve
 	port := fmt.Sprintf(":%v", 6700)
