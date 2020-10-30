@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"simple-wallet/app/account"
+	"simple-wallet/app/errors"
 )
 
 type ErrHTTP struct {
@@ -16,28 +16,14 @@ type ErrHTTP struct {
 func ErrResponse(err error) ErrHTTP {
 
 	switch err.(type) {
-	case account.ErrUserHasAccount:
-		return ErrHTTP{
-			Error:   reflect.TypeOf(err).Name(),
-			Message: err.Error(),
-			Status:  http.StatusBadRequest,
-		}
-
-	case account.ErrAccountAccess:
+	case errors.ErrAccountAccess:
 		return ErrHTTP{
 			Error:   reflect.TypeOf(err).Name(),
 			Message: err.Error(),
 			Status:  http.StatusForbidden,
 		}
 
-	case account.ErrAmountBelowMinimum:
-		return ErrHTTP{
-			Error:   reflect.TypeOf(err).Name(),
-			Message: err.Error(),
-			Status:  http.StatusBadRequest,
-		}
-
-	case account.ErrNotEnoughBalance:
+	case errors.ErrNotEnoughBalance:
 		return ErrHTTP{
 			Error:   reflect.TypeOf(err).Name(),
 			Message: err.Error(),
