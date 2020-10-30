@@ -1,11 +1,11 @@
 package account
 
 import (
-	"fmt"
 	"log"
 	"time"
 
 	"simple-wallet/app/data"
+	"simple-wallet/app/errors"
 	"simple-wallet/app/models"
 
 	"github.com/gofrs/uuid"
@@ -40,6 +40,24 @@ type interactor struct {
 	transactionsChannel data.ChanNewTransactions
 }
 
+func (i interactor) isUserAccAccessible(userID uuid.UUID) (*models.Account, error) {
+	acc, err := i.repository.GetAccountByUserID(userID)
+	if errors.ErrorCode(err) == errors.ENOTFOUND {
+		return nil, errors.Error{Message: errors.AccountNotCreated, Err: err}
+	} else if err != nil {
+		return nil, err
+	}
+
+	if acc.Status == models.StatusFrozen || acc.Status == models.StatusSuspended {
+		e := errors.ErrAccountAccess{Reason: string(acc.Status)}
+		return nil, errors.Error{Err: e}
+	}
+
+	return &acc, nil
+
+}
+
+// CreateAccount creates an account for a certain user
 func (i interactor) CreateAccount(userId uuid.UUID) (models.Account, error) {
 	acc, err := i.repository.Create(userId)
 	if err != nil {
@@ -48,49 +66,75 @@ func (i interactor) CreateAccount(userId uuid.UUID) (models.Account, error) {
 	return acc, nil
 }
 
+// GetBalance fetches the users account balance
 func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
-	acc, err := i.repository.GetBalance(userId)
+	acc, err := i.isUserAccAccessible(userId)
 	if err != nil {
 		return 0, err
 	}
 
 	i.postTransactionDetails(userId, *acc, models.TxTypeBalance)
-	return acc.Balance, nil
+	return acc.Balance(), nil
 }
 
+// Deposit credits a users account with an amount
 func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
 	if amount < 10 {
-		return 0, ErrAmountBelowMinimum{
-			Message: fmt.Sprintf("cannot deposit amounts less than %v", minimumDepositAmount),
-		}
+		e := errors.ErrAmountBelowMinimum(minimumDepositAmount, errors.DepositAmountBelowMinimum)
+		return 0, errors.Error{Err: e}
 	}
 
-	acc, err := i.repository.Deposit(userId, amount)
+	acc, err := i.isUserAccAccessible(userId)
+	if err != nil {
+		return 0, err
+	}
+
+	// update balance with amount: add amount
+	amt := acc.Credit(amount)
+	*acc, err = i.repository.UpdateBalance(amt, userId)
 	if err != nil {
 		return 0, err
 	}
 
 	i.postTransactionDetails(userId, *acc, models.TxTypeDeposit)
-	return acc.Balance, nil
+	return acc.Balance(), nil
 }
 
+// Withdraw debits a user's account with an amount
 func (i interactor) Withdraw(userId uuid.UUID, amount uint) (float64, error) {
 	if amount < 10 {
-		return 0, ErrAmountBelowMinimum{
-			Message: fmt.Sprintf("cannot withdraw amounts less than %v", minimumWithdrawalAmount),
-		}
+		e := errors.ErrAmountBelowMinimum(minimumWithdrawalAmount, errors.WithdrawAmountBelowMinimum)
+		return 0, errors.Error{Err: e}
+	}
+
+	acc, err := i.isUserAccAccessible(userId)
+	if err != nil {
+		return 0, err
 	}
 
 	// we can implement a double withdrawal check here. That will prevent a user from
 	// withdrawing same amount twice within a stipulated time interval because of system lag.
 
-	acc, err := i.repository.Withdraw(userId, amount)
+	// check that balance is more than amount
+	if acc.IsBalanceLessThanAmount(amount) {
+		e := errors.ErrNotEnoughBalance{
+			Message: errors.WithdrawAmountAboveBalance,
+			Amount:  amount,
+			Balance: acc.Balance(),
+		}
+		return 0, errors.Error{Err: e}
+	}
+
+	// update balance with amount: subtract amount
+	amt := acc.Debit(amount)
+	log.Printf("new amount %v", amt)
+	*acc, err = i.repository.UpdateBalance(amt, userId)
 	if err != nil {
 		return 0, err
 	}
 
 	i.postTransactionDetails(userId, *acc, models.TxTypeWithdrawal)
-	return acc.Balance, nil
+	return acc.Balance(), nil
 }
 
 func (i interactor) postTransactionDetails(userId uuid.UUID, acc models.Account, txType string) {
