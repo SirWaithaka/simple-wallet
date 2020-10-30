@@ -35,13 +35,13 @@ func Authenticate(userDomain user.Interactor, config app.Config) fiber.Handler {
 
 		// if there is an error authenticating user.
 		if err != nil {
-			return ctx.Status(http.StatusBadRequest).JSON(err)
+			return err
 		}
 
 		// generate an auth token string
 		token, err := auth.GetTokenString(u.ID, config.Secret)
 		if err != nil {
-
+			return err
 		}
 
 		signedUser := models.SignedUser{
@@ -69,7 +69,7 @@ func Register(userDomain user.Interactor) fiber.Handler {
 		// register user
 		u, err := userDomain.Register(params)
 		if err != nil {
-			return ctx.Status(http.StatusBadRequest).JSON(err)
+			return err
 		}
 
 		// we use a presenter to reformat the response of user.

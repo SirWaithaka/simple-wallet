@@ -23,8 +23,7 @@ func BalanceEnquiry(interactor account.Interactor) fiber.Handler {
 
 		balance, err := interactor.GetBalance(uuid.FromStringOrNil(userId))
 		if err != nil {
-			errHTTP := ErrResponse(err)
-			return ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return err
 		}
 
 		return ctx.JSON(map[string]interface{}{
@@ -47,12 +46,11 @@ func Deposit(interactor account.Interactor) fiber.Handler {
 
 		balance, err := interactor.Deposit(uuid.FromStringOrNil(userId), p.Amount)
 		if err != nil {
-			errHTTP := ErrResponse(err)
-			return ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return err
 		}
 
 		return ctx.JSON(map[string]interface{}{
-			"message": fmt.Sprintf("Amount successfully deposited new balance %v", balance),
+			"message": fmt.Sprintf("Amount successfully deposited. New balance %v", balance),
 			"balance": balance,
 			"userId":  userId,
 		})
@@ -72,12 +70,11 @@ func Withdraw(interactor account.Interactor) fiber.Handler {
 
 		balance, err := interactor.Withdraw(uuid.FromStringOrNil(userId), p.Amount)
 		if err != nil {
-			errHTTP := ErrResponse(err)
-			return ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return err
 		}
 
 		return ctx.JSON(map[string]interface{}{
-			"message": fmt.Sprintf("Amount successfully withdrawn new balance %v", balance),
+			"message": fmt.Sprintf("Amount successfully withdrawn. New balance %v", balance),
 			"balance": balance,
 			"userId":  userId,
 		})
@@ -94,12 +91,11 @@ func MiniStatement(interactor transaction.Interactor) fiber.Handler {
 
 		transactions, err := interactor.GetStatement(uuid.FromStringOrNil(userId))
 		if err != nil {
-			errHTTP := ErrResponse(err)
-			return ctx.Status(errHTTP.Status).JSON(errHTTP)
+			return err
 		}
 
 		return ctx.JSON(map[string]interface{}{
-			"message":      fmt.Sprintf("ministatement retrieved for the past 5 transactions"),
+			"message":      "ministatement retrieved for the past 5 transactions",
 			"userId":       userId,
 			"transactions": transactions,
 		})
