@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"simple-wallet/app/auth"
-	"simple-wallet/app/user"
+	"simple-wallet/app/errors"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
@@ -21,7 +21,7 @@ type ErrHTTP struct {
 func NewErrHTTP(err error) ErrHTTP {
 
 	switch err.(type) {
-	case user.ErrUnauthorized:
+	case errors.Unauthorized:
 		return ErrHTTP{
 			Error:   reflect.TypeOf(err).Name(),
 			Message: err.Error(),
@@ -43,14 +43,14 @@ func AuthByBearerToken(secret string) fiber.Handler {
 		// check that the header is actually set
 		header := ctx.Get("Authorization")
 		if header == "" {
-			err := user.ErrUnauthorized{Message: "authorization header not set"}
+			err := errors.Unauthorized{Message: "authorization header not set"}
 			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
 		}
 
 		// check that the token value in header is set
 		bearer := strings.Split(header, " ")
 		if len(bearer) < 2 || bearer[1] == "" {
-			err := user.ErrUnauthorized{Message: "authentication token not set"}
+			err := errors.Unauthorized{Message: "authentication token not set"}
 			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(err))
 		}
 
@@ -58,15 +58,15 @@ func AuthByBearerToken(secret string) fiber.Handler {
 		token, err := auth.ParseToken(bearer[1], secret, &claims)
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
-				errUnauthorized := user.ErrUnauthorized{Message: "invalid signature on token"}
+				errUnauthorized := errors.Unauthorized{Message: "invalid signature on token"}
 				return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
 			}
 
-			errUnauthorized := user.ErrUnauthorized{Message: "token has expired or is invalid"}
+			errUnauthorized := errors.Unauthorized{Message: "token has expired or is invalid"}
 			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errUnauthorized))
 		}
 		if valid := auth.ValidateToken(token); !valid {
-			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(user.ErrUnauthorized{Message: "invalid token"}))
+			return ctx.Status(http.StatusUnauthorized).JSON(NewErrHTTP(errors.Unauthorized{Message: "invalid token"}))
 		}
 
 		userDetails := map[string]string{
