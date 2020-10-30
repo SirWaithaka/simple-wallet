@@ -1,129 +1,78 @@
 package account
 
 import (
-	"errors"
-	"fmt"
-	"time"
-
+	"simple-wallet/app/errors"
 	"simple-wallet/app/models"
 	"simple-wallet/app/storage"
 
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
 type Repository interface {
+	GetAccountByUserID(uuid.UUID) (models.Account, error)
+	UpdateBalance(amount uint, userID uuid.UUID) (models.Account, error)
+
 	Create(userId uuid.UUID) (models.Account, error)
-	GetBalance(userId uuid.UUID) (*models.Account, error)
-	Deposit(userId uuid.UUID, amount uint) (*models.Account, error)
-	Withdraw(userId uuid.UUID, amount uint) (*models.Account, error)
 }
 
 type repository struct {
-	database *storage.Database
+	db *storage.Database
 }
 
-func NewRepository(db *storage.Database) Repository {
-	return &repository{database: db}
+func NewRepository(database *storage.Database) Repository {
+	return &repository{db: database}
+}
+
+// GetAccountByUserID fetches an account tied to a user's id
+func (r repository) GetAccountByUserID(userID uuid.UUID) (models.Account, error) {
+	var acc models.Account
+	result := r.db.Where(models.Account{UserID: userID}).First(&acc)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return models.Account{}, errors.Error{Code: errors.ENOTFOUND}
+	} else if result.Error != nil {
+		return models.Account{}, errors.Error{Err: result.Error, Code: errors.EINTERNAL}
+	}
+
+	return acc, nil
+}
+
+// UpdateBalance
+func (r repository) UpdateBalance(amount uint, userID uuid.UUID) (models.Account, error) {
+	var acc models.Account
+	result := r.db.Model(models.Account{}).Where(models.Account{UserID: userID}).Updates(models.Account{AvailableBalance: amount}).Scan(&acc)
+	if err := result.Error; err != nil {
+		return models.Account{}, errors.Error{Err: err, Code: errors.EINTERNAL}
+	}
+
+	return acc, nil
 }
 
 // Create a now account for userId
 func (r repository) Create(userId uuid.UUID) (models.Account, error) {
-	// check if user has no account already
-	var acc models.Account
-	result := r.database.Where(models.Account{UserID: userId}).First(&acc)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// if a record found we return custom error
-		err := ErrUserHasAccount{userId: acc.UserID.String(), accountId: acc.ID.String()}
-		return models.Account{}, err
-	}
-
-	// create account
-	newAcc := zeroAccount(userId)
-	result = r.database.Where(models.Account{UserID: userId}).Assign(newAcc).FirstOrCreate(&acc)
+	// check if user has an account and return it, otherwise create an account for user
+	acc := zeroAccount(userId)
+	result := r.db.Where(models.Account{UserID: userId}).FirstOrCreate(&acc)
 	if err := result.Error; err != nil {
-		return models.Account{}, NewErrUnexpected(err)
-	}
-
-	return acc, nil
-}
-
-// GetBalance for account with userId
-func (r repository) GetBalance(userId uuid.UUID) (*models.Account, error) {
-	acc, err := r.isAccAccessible(userId)
-	if err != nil {
-		return nil, err
-	}
-
-	return acc, nil
-}
-
-// Deposit amount into account with userId
-func (r repository) Deposit(userId uuid.UUID, amount uint) (*models.Account, error) {
-	acc, err := r.isAccAccessible(userId)
-	if err != nil {
-		return nil, err
-	}
-
-	// update balance with amount: add amount
-	amtF := acc.Balance + float64(amount)
-	result := r.database.Model(acc).Updates(models.Account{Balance: amtF})
-	if err = result.Error; err != nil {
-		return nil, NewErrUnexpected(err)
-	}
-
-	return acc, nil
-}
-
-// Withdraw amount from account with userId
-func (r repository) Withdraw(userId uuid.UUID, amount uint) (*models.Account, error) {
-	acc, err := r.isAccAccessible(userId)
-	if err != nil {
-		return nil, err
-	}
-
-	// check that balance is more than amount
-	if acc.Balance < float64(amount) {
-		return nil, ErrNotEnoughBalance{
-			Message: fmt.Sprintf("cannot withdraw %v, your account has %v", amount, acc.Balance),
+		// we check if the error is a postgres unique constraint violation
+		if pgerr, ok := result.Error.(*pgconn.PgError); ok && pgerr.Code == "23505" {
+			return models.Account{}, errors.Error{Err: err, Code: errors.ECONFLICT, Message: errors.ErrUserHasAccount(userId, acc.ID)}
 		}
-	}
-
-	// update balance with amount: subtract amount
-	amtF := acc.Balance - float64(amount)
-	result := r.database.Model(acc).Updates(models.Account{Balance: amtF})
-	if err = result.Error; err != nil {
-		return nil, NewErrUnexpected(err)
+		return models.Account{}, errors.Error{Err: err, Code: errors.EINTERNAL}
 	}
 
 	return acc, nil
 }
 
-func (r repository) isAccAccessible(userId uuid.UUID) (*models.Account, error) {
-	var acc models.Account
-	result := r.database.Where(models.Account{UserID: userId}).First(&acc)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		err := ErrAccountAccess{reason: "Not Created. Report issue"}
-		return nil, err
-	}
-
-	if acc.Status == models.StatusFrozen || acc.Status == models.StatusSuspended {
-		return nil, ErrAccountAccess{reason: acc.Status}
-	}
-
-	return &acc, nil
-}
-
-func zeroAccount(userId uuid.UUID) *models.Account {
+func zeroAccount(userId uuid.UUID) models.Account {
 	id, _ := uuid.NewV4()
 
-	return &models.Account{
-		ID:              id,
-		Balance:         0,
-		Status:          models.StatusActive,
-		AccountType:     models.TypeCurrent,
-		UserID:          userId,
-		CreationDate:    time.Now(),
-		LastUpdatedDate: time.Now(),
+	return models.Account{
+		ID: id,
+		// balance:     0, // no need to initialize with zero value, Go will do that for us
+		Status:      models.StatusActive,
+		AccountType: models.AccTypeCurrent,
+		UserID:      userId,
 	}
 }
