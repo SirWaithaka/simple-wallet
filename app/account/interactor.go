@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	minimumDepositAmount    = 10
-	minimumWithdrawalAmount = 0
+	minimumDepositAmount    = 10 // least possible amount that can be deposited into an account
+	minimumWithdrawalAmount = 1  // least possible amount that can be withdrawn from an account
 )
 
 type Interactor interface {
@@ -66,7 +66,7 @@ func (i interactor) CreateAccount(userId uuid.UUID) (models.Account, error) {
 	return acc, nil
 }
 
-// GetBalance fetches the users account balance
+// GetBalance fetches the user's account balance
 func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
 	acc, err := i.isUserAccAccessible(userId)
 	if err != nil {
@@ -77,7 +77,7 @@ func (i interactor) GetBalance(userId uuid.UUID) (float64, error) {
 	return acc.Balance(), nil
 }
 
-// Deposit credits a users account with an amount
+// Deposit credits a user's account with an amount
 func (i interactor) Deposit(userId uuid.UUID, amount uint) (float64, error) {
 	if amount < 10 {
 		e := errors.ErrAmountBelowMinimum(minimumDepositAmount, errors.DepositAmountBelowMinimum)
