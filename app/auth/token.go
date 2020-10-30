@@ -8,6 +8,15 @@ import (
 	"github.com/gofrs/uuid"
 )
 
+// TokenParsingError ...
+type TokenParsingError struct {
+	message string
+}
+
+func (err TokenParsingError) Error() string {
+	return err.message
+}
+
 type TokenDetails struct {
 	UserId string `json:"userId"`
 	Email  string `json:"email"`

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"simple-wallet/app/data"
+	"simple-wallet/app/errors"
 	"simple-wallet/app/models"
 
 	"github.com/gofrs/uuid"
@@ -60,9 +61,8 @@ func (i interactor) listenOnTransactions() {
 			transaction := parseToTransaction(tx)
 
 			err := i.AddTransaction(*transaction)
-			if err != nil {
-				e := err.(*ErrUnexpected)
-				log.Println(e.Debug())
+			if err != nil { // if we get an error, it is unexpected, we log it
+				log.Printf("error happened when adding transaction to db %v", err.(errors.Error).Err)
 				return
 			}
 			log.Printf("Transaction %v has been successfully added.", transaction.ID)
