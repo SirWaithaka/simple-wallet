@@ -50,7 +50,7 @@ func (r repository) Add(user models.User) (models.User, error) {
 	if err := result.Error; err != nil {
 		// we check if the error is a postgres unique constraint violation
 		if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == "23505" {
-			return user, errors.Error{Err: err, Code: errors.ECONFLICT, Message: errors.ErrUserExists}
+			return user, errors.Error{Code: errors.ECONFLICT, Message: errors.ErrUserExists}
 		}
 		return models.User{}, errors.Error{Err: result.Error, Code: errors.EINTERNAL}
 	}

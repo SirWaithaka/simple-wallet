@@ -57,7 +57,7 @@ func (r repository) Create(userId uuid.UUID) (models.Account, error) {
 	if err := result.Error; err != nil {
 		// we check if the error is a postgres unique constraint violation
 		if pgerr, ok := result.Error.(*pgconn.PgError); ok && pgerr.Code == "23505" {
-			return models.Account{}, errors.Error{Err: err, Code: errors.ECONFLICT, Message: errors.ErrUserHasAccount(userId, acc.ID)}
+			return models.Account{}, errors.Error{Code: errors.ECONFLICT, Message: errors.ErrUserHasAccount(userId, acc.ID)}
 		}
 		return models.Account{}, errors.Error{Err: err, Code: errors.EINTERNAL}
 	}
