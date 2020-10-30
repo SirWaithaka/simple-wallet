@@ -77,14 +77,25 @@ database installation step.
 
 #### Building and running
 
+##### Using the Binary
 ```bash
 $ cd main
 $ go build wallet-server.go
 $ ./wallet-server
 ```
 
-It will install all dependencies required and produce a binary for you platform. Then the server will start at port
-`6700`.
+It will install all dependencies required and produce a binary for your platform.
+
+##### Using the Dockerfile
+Make sure you have docker installed and working properly.
+
+```bash
+$ docker build -t simple-wallet:latest .
+$ docker container create --name wallet-server -p 6700:6700 --restart unless-stopped simple-wallet
+$ docker container start wallet-server
+```
+
+The server will start at port `6700`.
 
 Enjoy.
 
@@ -96,19 +107,21 @@ A description of the api.
 
 All the routes exposed in the application are all defined in this function
 ```go
-func apiRouteGroup(g *fiber.Group, domain *registry.Domain, config wallet.Config) {
-	g.Post("/login", users.Authenticate(domain.User))
-	g.Post("/user", users.Register(domain.User))
+func apiRouteGroup(g fiber.Router, domain *registry.Domain, config app.Config) {
 
-	g.Get("/account/balance", middleware.AuthByBearerToken(config.Secret), accounts.BalanceEnquiry(domain.Account))
-	g.Post("/account/deposit", middleware.AuthByBearerToken(config.Secret), accounts.Deposit(domain.Account))
-	g.Post("/account/withdrawal", middleware.AuthByBearerToken(config.Secret), accounts.Withdraw(domain.Account))
+	g.Post("/login", user_handlers.Authenticate(domain.User, config))
+	g.Post("/user", user_handlers.Register(domain.User))
 
-	g.Get("/account/statement", middleware.AuthByBearerToken(config.Secret), accounts.MiniStatement(domain.Transaction))
+	g.Get("/account/balance", middleware.AuthByBearerToken(config.Secret), account_handlers.BalanceEnquiry(domain.Account))
+	g.Post("/account/deposit", middleware.AuthByBearerToken(config.Secret), account_handlers.Deposit(domain.Account))
+	g.Post("/account/withdrawal", middleware.AuthByBearerToken(config.Secret), account_handlers.Withdraw(domain.Account))
+	g.Post("/account/withdraw", middleware.AuthByBearerToken(config.Secret), account_handlers.Withdraw(domain.Account))
+
+	g.Get("/account/statement", middleware.AuthByBearerToken(config.Secret), account_handlers.MiniStatement(domain.Transaction))
 }
 ```
 
-The about routes are mounted on the prefix `/api` so your request should point to
+The routes are mounted on the prefix `/api` so your requests should point to
 ```
 POST /api/login
 POST /api/user # for registration
@@ -121,6 +134,18 @@ GET /api/account/statement
 #### To Register
 A user can be registered to the api with the following `POST` parameters
 `firstName`, `lastName`, `email`,  `phoneNumber`, `password`
+
+Curl request example
+```bash
+curl --request POST \
+  --url http://localhost:6700/api/user \
+  --header 'content-type: application/x-www-form-urlencoded' \
+  --data firstName=Sir \
+  --data lastName=Waithaka \
+  --data email=newme@email.com \
+  --data phoneNumber=254700000000 \
+  --data password=mnbvcxz
+```
 
 Response example
 ```json
@@ -137,6 +162,15 @@ Response example
 #### To Login
 You can use `email and password` or `phoneNumber and password`
 
+Curl request example
+```bash
+curl --request POST \
+  --url http://localhost:6700/api/login \
+  --header 'content-type: application/x-www-form-urlencoded' \
+  --data password=mnbvcxz \
+  --data phoneNumber=254700000000
+```
+
 Response example
 
 ```json
@@ -146,36 +180,61 @@ Response example
 }
 ```
 
-The remaining endpoints require the token acquired above for authentication
+**NOTE**: The remaining endpoints require the token acquired above for authentication
 
 #### To Deposit
 You only need the `amount` parameter
+
+Curl request example
+```bash
+curl --request POST \
+  --url http://localhost:6700/api/account/deposit \
+  --header 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6Ijk4YmNmMmY1LWRiY2ItNDk1NS04NTU0LTc0OWYxMTVhZjU5OCIsImVtYWlsIjoiIn0sImV4cCI6MTYwNDA2Mjg0NiwiaWF0IjoxNjA0MDQxMjQ2fQ.Z0oFwOV3wEiQzpwLg4LH5NZIBUsllDhcJefgvceMiHw' \
+  --header 'content-type: application/x-www-form-urlencoded' \
+  --data amount=1000
+```
 
 Response example
 
 ```json
 {
-    "message": "Amount successfully deposited new balance 5000",
-    "balance": 5000,
-    "userId": "84809a02-9082-4ae3-9047-3840948c57cf"
+  "balance": 1000,
+  "message": "Amount successfully deposited new balance 1000",
+  "userId": "98bcf2f5-dbcb-4955-8554-749f115af598"
 }
 ``` 
 
 #### To Withdraw
 You only need the `amount` parameter
 
+Curl request example
+```bash
+curl --request POST \
+  --url http://localhost:6700/api/account/withdrawal \
+  --header 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6Ijk4YmNmMmY1LWRiY2ItNDk1NS04NTU0LTc0OWYxMTVhZjU5OCIsImVtYWlsIjoiIn0sImV4cCI6MTYwNDA2OTE0MywiaWF0IjoxNjA0MDQ3NTQzfQ.IYyclrC66aweehs_A4Sigmc83a27udmPofM2yOeut9Q' \
+  --header 'content-type: application/x-www-form-urlencoded' \
+  --data amount=40
+```
+
 Response example
 
 ```json
 {
-    "message": "Amount successfully withdrawn new balance 4700",
-    "balance": 4700,
-    "userId": "84809a02-9082-4ae3-9047-3840948c57cf"
+  "balance": 880,
+  "message": "Amount successfully withdrawn. New balance 880",
+  "userId": "98bcf2f5-dbcb-4955-8554-749f115af598"
 }
 ```
 
 #### To Query Balance
 This is just a `GET` request, no params
+
+Curl request example
+```bash
+curl --request GET \
+  --url http://localhost:6700/api/account/balance \
+  --header 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6Ijk4YmNmMmY1LWRiY2ItNDk1NS04NTU0LTc0OWYxMTVhZjU5OCIsImVtYWlsIjoiIn0sImV4cCI6MTYwNDA2Mjg0NiwiaWF0IjoxNjA0MDQxMjQ2fQ.Z0oFwOV3wEiQzpwLg4LH5NZIBUsllDhcJefgvceMiHw'
+```
 
 Response example
 
@@ -188,6 +247,13 @@ Response example
 
 #### To Get Mini Statement
 This is just a `GET` request, no params
+
+Curl request example
+```bash
+curl --request GET \
+  --url http://localhost:6700/api/account/statement \
+  --header 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJJZCI6Ijk4YmNmMmY1LWRiY2ItNDk1NS04NTU0LTc0OWYxMTVhZjU5OCIsImVtYWlsIjoiIn0sImV4cCI6MTYwNDA2OTE0MywiaWF0IjoxNjA0MDQ3NTQzfQ.IYyclrC66aweehs_A4Sigmc83a27udmPofM2yOeut9Q'
+```
 
 Response example
 

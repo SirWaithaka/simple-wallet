@@ -6,15 +6,16 @@ LABEL maintainer="Sir Waithaka"
 # Set the current working directory inside the container
 WORKDIR /go/src/application
 
+# copy go.{mod,sum} files for use to fetch dependencies
+# fetching go dependencies first allows the build tool to cache this part of the image
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
 # Copy project source files
 COPY app/ ./app
 COPY cmd/ ./cmd
 COPY configs/ ./configs
-
-# copy go.{mod,sum} files for use to fetch dependencies
-COPY go.mod .
-COPY go.sum .
-RUN go mod download
 
 # Build the application
 RUN mkdir bin/
