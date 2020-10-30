@@ -13,11 +13,10 @@ type ERCode string
 type ErrorMessage string
 
 const (
-	ECONFLICT  = ERCode("conflict")        // action cannot be performed
+	ECONFLICT  = ERCode("conflict")        // action cannot be performed e.g. when inserting existing record to db
 	EINTERNAL  = ERCode("internal")        // internal error
 	EINVALID   = ERCode("invalid")         // validation failed
 	ENOTFOUND  = ERCode("not_found")       // entity does not exist
-	EDUPLICATE = ERCode("resource_exists") // entity already exists
 )
 
 // Error is our standard application error
